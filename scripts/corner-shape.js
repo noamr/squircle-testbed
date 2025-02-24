@@ -24,7 +24,7 @@ function map_control_points(points, x0, y0, x1, y1) {
  */
 function compute_outer_corners(x0, y0, x1, y1, wx, wy, curvature) {
   if (curvature >= 2)
-    return [x1, y1, x0, y0, x1, y1]
+    return [x0, y0, x1, y1, x0, y0, x1, y1]
   const with_join = curvature < 1;
   const outer_offset = offset_for_curvature(Math.max(0.5, Math.min(2, curvature)));
   const inner_offset = with_join ? Math.sqrt(2 * Math.max(0.5, curvature)) : outer_offset;
@@ -33,12 +33,12 @@ function compute_outer_corners(x0, y0, x1, y1, wx, wy, curvature) {
     if (y1 > y0) {
       // top-right
       return [
-        x1 - join(wx), y1 - wx * inner_offset,
+        x0 + wy * inner_offset, y0 + join(wy), x1 - join(wx), y1 - wx * inner_offset,
         x0 + wy * outer_offset, y0, x1, y1 - wx * outer_offset];
     } else {
       // bottom-right
       return [
-        x1 - join(wx), y1 + wx * inner_offset,
+        x0 + wy * inner_offset, y0 - join(wy), x1 - join(wx), y1 + wx * inner_offset,
         x0 + wy * outer_offset, y0, x1, y1 + wx * outer_offset,
       ];
     }
@@ -46,12 +46,13 @@ function compute_outer_corners(x0, y0, x1, y1, wx, wy, curvature) {
     if (y1 > y0) {
       // top-left
       return [
-        x1 + join(wx), y1 - wx * inner_offset,
+        x0 - wy * inner_offset, y0 + join(wy), x1 + join(wx), y1 - wx * inner_offset,
         x0 - wy * outer_offset, y0, x1, y1 - wx * outer_offset,
       ];
     } else {
       // bottom-left
-      return [x1 + join(wx), y1 + wx * inner_offset,
+      return [
+        x0 - wy * inner_offset, y0 - join(wy), x1 + join(wy), y1 + wx * inner_offset,
         x0 - wy * outer_offset, y0, x1, y1 + wx * outer_offset
       ];
     }
@@ -81,14 +82,14 @@ function drawCorner(ctx,
   wx, wy,
   curvature, color1, color2)
 {
-  const [dx1, dy1, ex0,ey0,ex1,ey1] = compute_outer_corners(ox0, oy0, ox1, oy1, wx, wy, curvature);
+  const [dx0, dy0, dx1, dy1, ex0, ey0, ex1, ey1] = compute_outer_corners(ox0, oy0, ox1, oy1, wx, wy, curvature);
 
-  const control_points =
-    control_points_for_superellipse(curvature)
+  const control_points = control_points_for_superellipse(curvature)
 
   let path = new Path2D();
   const icp = map_control_points(control_points, ix0, iy0, ix1, iy1);
-  const ocp = map_control_points(control_points, ex0, ey0, dx1, dy1);
+  const ocp = map_control_points(control_points, dx0, dy0, dx1, dy1);
+  const ecp = map_control_points(control_points, ex0, ey0, ex1, ey1)
   path.moveTo(ix0, iy0);
   path.bezierCurveTo(...icp.slice(0, 6));
   path.lineTo(ocp[4], ocp[5]);
@@ -104,6 +105,14 @@ function drawCorner(ctx,
   path.bezierCurveTo(ocp[8], ocp[9], ocp[6], ocp[7], ocp[4], ocp[5]);
   ctx.fillStyle = color2;
   ctx.fill(path, "nonzero");
+  ctx.fillStyle = "rgba(0, 255, 0, .3)";
+  ctx.fillRect(ox0, oy0, ox1 - ox0, oy1 - oy0);
+  ctx.fillStyle = "rgba(255, 0, 0, .3)";
+  ctx.fillRect(ex0, ey0, ex1 - ex0, ey1 - ey0);
+  ctx.fillStyle = "rgba(0, 0, 255, .3)";
+  ctx.fillRect(dx0, dy0, dx1 - dx0, dy1 - dy0);
+  ctx.fillStyle = "rgba(255, 255, 255, .3)";
+  ctx.fillRect(ix0, iy0, ix1 - ix0, iy1 - iy0);
 }
 
 /**
