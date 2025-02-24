@@ -19,8 +19,8 @@ function fix_style(style, w, h) {
         radius[0] = (parseFloat(radius[0]) * w) / 100;
       if (String(radius[1]).endsWith("%"))
         radius[1] = (parseFloat(radius[1]) * h) / 100;
-      radius = [Math.min(radius[0], w / 2), Math.min(radius[1], h / 2)];
       style[`corner-${vSide}-${hSide}-shape`] = shape;
+      radius = [Math.min(Math.max(radius[0], hWidth), w / 2), Math.min(Math.max(radius[1], vWidth), h / 2)];
       style[`border-${vSide}-${hSide}-radius`] = radius;
       style[`border-${hSide}-width`] = hWidth;
       style[`border-${vSide}-width`] = vWidth;
