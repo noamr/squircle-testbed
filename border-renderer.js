@@ -286,7 +286,7 @@ class BorderRenderer {
 
         function superellipse(s, t)
         {
-            const n = Math.pow(2, s);
+            const n = Math.pow(1/2, s);
             const x = Math.pow(t, 1 / n);
             const y = Math.pow(1 - t, 1 / n);
             return new Size(x, y);

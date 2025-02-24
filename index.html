@@ -32,6 +32,7 @@
         .controls {
             grid-row: 1;
             grid-column: 2;
+            max-width: 700px;
         }
 
         .details {
@@ -96,6 +97,10 @@
         
         custom-popup {
         }
+
+        footer {
+            text-align: center;
+        }
     </style>
 
     <script src="scripts/utils.js"></script>
@@ -154,7 +159,7 @@
 
                 <label>Superellipse parameter:</label>
                 <div class="labeled-control">
-                    <label class="k-label">K</label><value-slider class="slider" id="k-slider" min="-10" max="10" step="0.005" value=-1></value-slider>
+                    <label class="k-label">K</label><value-slider class="slider" id="k-slider" min="-10" max="10" step="0.005" value=1></value-slider>
                 </div>
                 <div class="labeled-control">
                     <input id="zoom" type="checkbox"><label for="zoom">Zoom</label>
@@ -162,5 +167,7 @@
             </div>
         </section>
     </main>
+
+    <footer>Credit: Simon Fraser</footer>
 </body>
 </html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<link rel="stylesheet" href="corner-shape.css">
+<script src="setup.js" type="module"></script>
+<main>
+    <section>
+        <canvas id="ref" width=400 height=400></canvas>
+    </section>
+    <form id=form>
+        <fieldset class="top-left">
+            Top Left
+        </fieldset>
+        <fieldset class="top">
+            Top
+        </fieldset>
+        <fieldset class="top-right">
+            Top Right
+        </fieldset>
+        <fieldset class="left">
+            Left
+        </fieldset>
+        <fieldset class="center">
+            <label>Width <input type=range name=width min=20 max=700 value=300>
+            <label>Height <input type=range name=height min=20 max=400 value=300>
+        </fieldset>
+        <fieldset class="right">
+            Right
+        </fieldset>
+        <fieldset class="bottom-left">
+            Bottom Left
+        </fieldset>
+        <fieldset class="bottom">
+            Bottom
+        </fieldset>
+        <fieldset class="bottom-right">
+            Bottom Right
+        </fieldset>
+    </form>
+    <datalist id="se-ticks">
+        <option value="0" label="Notch (-inf)">
+        <option value="6.25" label="Scoop (-2)">
+        <option value="25" label="-1">
+        <option value="50" label="Bevel (0)">
+        <option value="70.7" label="Round (1)">
+        <option value="84.1" label="Squircle (2)">
+        <option value="87.5" label="Continuous (5.2)">
+        <option value="100" label="Square (inf)">
+    </datalist>
+    <datalist id="width-ticks">
+        <option value="0">
+        <option value="1">
+        <option value="5">
+        <option value="10">
+        <option value="20">
+        <option value="50">
+    </datalist>
+    <datalist id="radius-ticks">
+        <option value="0">
+        <option value="10">
+        <option value="20">
+        <option value="30">
+        <option value="40">
+        <option value="50">
+    </datalist>
+    <template id="corner-template">
+        <label>
+            Radius:
+            <input name="radius" type="range" min="0" max="50" value="30" list="radius-ticks">
+        </label>
+        <label>
+            Shape:
+            <input name="shape" type="range" min="0" max="100" value="50" list="se-ticks">
+        </label>
+    </template>
+    <template id="side-template">
+        <label>
+            Width:
+            <input name="width" type="range" min="0" max="100" value="10" list="width-ticks">
+        </label>
+        <label>
+            Color:
+            <input name="color" type="color">
+        </label>
+    </template>
+</main>
