@@ -36,6 +36,8 @@ function render_corner_shape_with_canvas() {
     for (const side of ["top", "right", "bottom", "left"])
       style[`border-${side}-color`] =
         document.forms.form.elements[`border-${side}-color`].value;
+    const asParams = new URLSearchParams(Object.entries(style));
+    history.pushState(null, null, "?" + asParams.toString())
     ref.width = style.width;
     ref.height = style.height;
     const ctx = document.getElementById("ref").getContext("2d");
@@ -82,6 +84,11 @@ for (const h of ["left", "right"]) {
 for (const v of ["top", "bottom"]) {
   borderSlider(v);
 }
+
+for (const [k, v] of new URLSearchParams(location.search).entries()) {
+    document.forms.form.elements[k].value = v;
+}
+
 render_corner_shape_with_canvas();
 form.onchange = () => {
   render_corner_shape_with_canvas();
