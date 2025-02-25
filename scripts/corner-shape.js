@@ -23,13 +23,20 @@ function map_control_points(points, x0, y0, x1, y1) {
  * @param {number} curvature
  */
 function compute_outer_corners(x0, y0, x1, y1, wrl, wtb, curvature) {
+  // Find the approximate slope & magnitude of the superellipse's tangent
   const a = Math.pow(0.5, 1/curvature);
   const b = 1 - a;
-  const slope = a/b;
+  const slope = a / b;
   const magnitude = Math.hypot(a, b);
-  const perp = [-a / magnitude, b/magnitude];
-  const inner_offset = perp[1] - slope * perp[0];
-  const outer_offset = inner_offset - slope;
+  // Normalize a & b
+  const norm_a = a / magnitude;
+  const norm_b = b / magnitude;
+
+  // The outer normal offset is the intercept of the line
+  // parallel to the tangent, at distance.
+  const outer_offset = norm_b + slope * (norm_a - 1);
+  console.log({slope, magnitude, outer_offset})
+
   if (x1 > x0) {
     if (y1 > y0) {
       // top-right
@@ -73,22 +80,12 @@ function drawCorner(ctx,
   curvature, color1, color2)
 {
   const [dx0, dy0, dx1, dy1] = compute_outer_corners(ox0, oy0, ox1, oy1, wx, wy, curvature);
-  const control_points_outer = control_points_for_superellipse(curvature)
-  const outer_cp_x = control_points_outer[2][0];
-  const diagnoal = Math.hypot(ox1 - ox0, oy1 - oy0);
-  const normalized_stroke = 0.1;
-  const dim_distance = normalized_stroke / Math.SQRT2;
-  const inner_cp_x = outer_cp_x + dim_distance;
-  const inner_cp_x_normalized = (inner_cp_x - normalized_stroke) / (1 - normalized_stroke);
-  const adjusted_inner_k = curvature
-    // curvature === 0 ? 0 :
-    // curvature > 10 ? curvature :
-    // (Math.log(.5) / Math.log(inner_cp_x_normalized));
-  const control_points_inner = control_points_for_superellipse(adjusted_inner_k)
-  const ocp = map_control_points(control_points_outer, dx0, dy0, dx1, dy1);
+  const control_points = control_points_for_superellipse(curvature)
+  const normalized_stroke = wx / (ox1 - ox0);
+  const ocp = map_control_points(control_points, dx0, dy0, dx1, dy1);
 
   let path = new Path2D();
-  const icp = map_control_points(control_points_inner, ix0, iy0, ix1, iy1);
+  const icp = map_control_points(control_points, ix0, iy0, ix1, iy1);
   path.moveTo(ix0, iy0);
   path.bezierCurveTo(...icp.slice(0, 6));
   path.lineTo(ocp[4], ocp[5]);
