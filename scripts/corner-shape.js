@@ -22,39 +22,29 @@ function map_control_points(points, x0, y0, x1, y1) {
  * @param {number} wy
  * @param {number} curvature
  */
-function compute_outer_corners(x0, y0, x1, y1, wx, wy, curvature) {
-  if (curvature >= 2)
-    return [x0, y0, x1, y1, x0, y0, x1, y1]
-  const with_join = curvature < 1;
-  const outer_offset = offset_for_curvature(Math.max(0.5, Math.min(2, curvature)));
-  const inner_offset = with_join ? Math.sqrt(2 * Math.max(0.5, curvature)) : outer_offset;
-  const join = h => with_join ? h : 0;
+function compute_outer_corners(x0, y0, x1, y1, wrl, wtb, curvature) {
+  const a = Math.pow(0.5, 1/curvature);
+  const b = 1 - a;
+  const slope = a/b;
+  const magnitude = Math.hypot(a, b);
+  const perp = [-a / magnitude, b/magnitude];
+  const inner_offset = perp[1] - slope * perp[0];
+  const outer_offset = inner_offset - slope;
   if (x1 > x0) {
     if (y1 > y0) {
       // top-right
-      return [
-        x0 + wy * inner_offset, y0 + join(wy), x1 - join(wx), y1 - wx * inner_offset,
-        x0 + wy * outer_offset, y0, x1, y1 - wx * outer_offset];
+      return [x0 + wtb * outer_offset, y0, x1, y1 - wrl * outer_offset];
     } else {
       // bottom-right
-      return [
-        x0 + wy * inner_offset, y0 - join(wy), x1 - join(wx), y1 + wx * inner_offset,
-        x0 + wy * outer_offset, y0, x1, y1 + wx * outer_offset,
-      ];
+      return [x0 + wtb * outer_offset, y0, x1, y1 + wrl * outer_offset];
     }
   } else {
     if (y1 > y0) {
       // top-left
-      return [
-        x0 - wy * inner_offset, y0 + join(wy), x1 + join(wx), y1 - wx * inner_offset,
-        x0 - wy * outer_offset, y0, x1, y1 - wx * outer_offset,
-      ];
+      return [x0 - wtb * outer_offset, y0, x1, y1 - wrl * outer_offset];
     } else {
       // bottom-left
-      return [
-        x0 - wy * inner_offset, y0 - join(wy), x1 + join(wy), y1 + wx * inner_offset,
-        x0 - wy * outer_offset, y0, x1, y1 + wx * outer_offset
-      ];
+      return [x0 - wtb * outer_offset, y0, x1, y1 + wrl * outer_offset];
     }
   }
 }
@@ -82,18 +72,27 @@ function drawCorner(ctx,
   wx, wy,
   curvature, color1, color2)
 {
-  const [dx0, dy0, dx1, dy1, ex0, ey0, ex1, ey1] = compute_outer_corners(ox0, oy0, ox1, oy1, wx, wy, curvature);
-
-  const control_points = control_points_for_superellipse(curvature)
+  const [dx0, dy0, dx1, dy1] = compute_outer_corners(ox0, oy0, ox1, oy1, wx, wy, curvature);
+  const control_points_outer = control_points_for_superellipse(curvature)
+  const outer_cp_x = control_points_outer[2][0];
+  const diagnoal = Math.hypot(ox1 - ox0, oy1 - oy0);
+  const normalized_stroke = 0.1;
+  const dim_distance = normalized_stroke / Math.SQRT2;
+  const inner_cp_x = outer_cp_x + dim_distance;
+  const inner_cp_x_normalized = (inner_cp_x - normalized_stroke) / (1 - normalized_stroke);
+  const adjusted_inner_k = curvature
+    // curvature === 0 ? 0 :
+    // curvature > 10 ? curvature :
+    // (Math.log(.5) / Math.log(inner_cp_x_normalized));
+  const control_points_inner = control_points_for_superellipse(adjusted_inner_k)
+  const ocp = map_control_points(control_points_outer, dx0, dy0, dx1, dy1);
 
   let path = new Path2D();
-  const icp = map_control_points(control_points, ix0, iy0, ix1, iy1);
-  const ocp = map_control_points(control_points, dx0, dy0, dx1, dy1);
-  const ecp = map_control_points(control_points, ex0, ey0, ex1, ey1)
+  const icp = map_control_points(control_points_inner, ix0, iy0, ix1, iy1);
   path.moveTo(ix0, iy0);
   path.bezierCurveTo(...icp.slice(0, 6));
   path.lineTo(ocp[4], ocp[5]);
-  path.bezierCurveTo(ocp[2], ocp[3], ocp[0], ocp[1], ex0, ey0);
+  path.bezierCurveTo(ocp[2], ocp[3], ocp[0], ocp[1], dx0, dy0);
   path.lineTo(ox0, oy0)
   ctx.fillStyle = color1;
   ctx.fill(path, "nonzero");
@@ -101,18 +100,16 @@ function drawCorner(ctx,
   path.moveTo(icp[4], icp[5]);
   path.bezierCurveTo(...icp.slice(6), ix1, iy1);
   path.lineTo(ox1, oy1);
-  path.lineTo(ex1, ey1);
+  path.lineTo(dx1, dy1);
   path.bezierCurveTo(ocp[8], ocp[9], ocp[6], ocp[7], ocp[4], ocp[5]);
   ctx.fillStyle = color2;
   ctx.fill(path, "nonzero");
-  ctx.fillStyle = "rgba(0, 255, 0, .3)";
-  ctx.fillRect(ox0, oy0, ox1 - ox0, oy1 - oy0);
-  ctx.fillStyle = "rgba(255, 0, 0, .3)";
-  ctx.fillRect(ex0, ey0, ex1 - ex0, ey1 - ey0);
-  ctx.fillStyle = "rgba(0, 0, 255, .3)";
-  ctx.fillRect(dx0, dy0, dx1 - dx0, dy1 - dy0);
-  ctx.fillStyle = "rgba(255, 255, 255, .3)";
-  ctx.fillRect(ix0, iy0, ix1 - ix0, iy1 - iy0);
+  // ctx.fillStyle = "rgba(0, 255, 0, .3)";
+  // ctx.fillRect(ox0, oy0, ox1 - ox0, oy1 - oy0);
+  // ctx.fillStyle = "rgba(0, 0, 255, .3)";
+  // ctx.fillRect(dx0, dy0, dx1 - dx0, dy1 - dy0);
+  // ctx.fillStyle = "rgba(255, 255, 255, .3)";
+  // ctx.fillRect(ix0, iy0, ix1 - ix0, iy1 - iy0);
 }
 
 /**
