@@ -28,7 +28,7 @@ function fix_style(style, w, h) {
   );
 }
 
-function render_corner_shape_with_canvas() {
+function render_corner_shape_with_canvas(do_save) {
     const formData = new FormData(document.forms.form);
     const style = Object.fromEntries(
       Array.from(formData).map(([k, v]) => [k, parseFloat(v)])
@@ -36,8 +36,10 @@ function render_corner_shape_with_canvas() {
     for (const side of ["top", "right", "bottom", "left"])
       style[`border-${side}-color`] =
         document.forms.form.elements[`border-${side}-color`].value;
-    const asParams = new URLSearchParams(Object.entries(style));
-    history.replaceState(null, null, "?" + asParams.toString())
+    if (do_save) {
+      const asParams = new URLSearchParams(Object.entries(style));
+      history.pushState(null, null, "?" + asParams.toString())
+    }
     ref.width = style.width;
     ref.height = style.height;
     const ctx = document.getElementById("ref").getContext("2d");
@@ -91,7 +93,7 @@ for (const [k, v] of new URLSearchParams(location.search).entries()) {
 
 render_corner_shape_with_canvas();
 form.onchange = () => {
-  render_corner_shape_with_canvas();
+  render_corner_shape_with_canvas(true);
 };
 
 form.oninput = () => {

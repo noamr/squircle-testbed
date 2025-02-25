@@ -81,7 +81,6 @@ function drawCorner(ctx,
 {
   const [dx0, dy0, dx1, dy1] = compute_outer_corners(ox0, oy0, ox1, oy1, wx, wy, curvature);
   const control_points = control_points_for_superellipse(curvature)
-  const normalized_stroke = wx / (ox1 - ox0);
   const ocp = map_control_points(control_points, dx0, dy0, dx1, dy1);
 
   let path = new Path2D();
