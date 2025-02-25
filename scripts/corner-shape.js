@@ -30,11 +30,21 @@ function map_control_points(points, x0, y0, x1, y1) {
 function drawCorner(ctx,
   ox0, oy0, ox1, oy1,
   ix0, iy0, ix1, iy1,
-  curvature, color1, color2)
+  curvature, color1, color2,
+  dx0 = ix0, dy0 = iy0, dx1 = ix1, dy1 = iy1)
 {
   const control_points = control_points_for_superellipse(curvature)
   const ocp = map_control_points(control_points, ox0, oy0, ox1, oy1);
-  const icp = map_control_points(control_points, ix0, iy0, ix1, iy1);
+  const dcp = map_control_points(control_points, dx0, dy0, dx1, dy1);
+  let icp = map_control_points(control_points, ix0, iy0, ix1, iy1);
+  const da = dcp[4];
+  const ia = icp[4];
+  if (da != ia) {
+    const cx = (ia - ix0) / (ix1 - ix0);
+    const k = Math.log(0.5) / Math.log(cx);
+    const cp2 = control_points_for_superellipse(k);
+    icp = map_control_points(cp2, ix0, iy0, ix1, iy1);
+  }
 
   let path = new Path2D();
   path.moveTo(ix0, iy0);
@@ -101,7 +111,12 @@ export function render(style, ctx, width, height) {
 
     style['corner-top-right-shape'],
     style['border-top-color'],
-    style['border-right-color']
+    style['border-right-color'],
+
+    width - style['border-top-right-radius'][0],
+    style['border-top-width'],
+    width - style['border-right-width'],
+    style['border-top-right-radius'][1] + style['border-right-width'],
   );
   // Right
   drawSide(
@@ -130,6 +145,10 @@ export function render(style, ctx, width, height) {
     style['corner-bottom-right-shape'],
     style['border-bottom-color'],
     style['border-right-color'],
+    width - style['border-bottom-right-radius'][0] - style['border-bottom-width'],
+    height - style['border-bottom-width'],
+    width - style['border-right-width'],
+    height - style['border-bottom-right-radius'][1] - style['border-left-width'],
   );
   // Bottom
   drawSide(
@@ -159,6 +178,11 @@ export function render(style, ctx, width, height) {
     style['corner-bottom-left-shape'],
     style['border-bottom-color'],
     style['border-left-color'],
+
+    style['border-bottom-left-radius'][0],
+    height - style['border-bottom-width'],
+    style['border-left-width'],
+    height - style['border-bottom-left-radius'][1],
   );
   // Left
   drawSide(
@@ -187,5 +211,9 @@ export function render(style, ctx, width, height) {
     style['corner-top-left-shape'],
     style['border-top-color'],
     style['border-left-color'],
+    style['border-top-left-radius'][0],
+    style['border-top-width'],
+    style['border-left-width'],
+    style['border-top-left-radius'][1]
   );
 }
