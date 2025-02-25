@@ -21,7 +21,6 @@ function fix_style(style, w, h) {
         radius[1] = (parseFloat(radius[1]) * h) / 100;
       style[`corner-${vSide}-${hSide}-shape`] = shape;
       const offset = offset_for_curvature(shape);
-      console.log(radius)
       radius = [
         Math.min(Math.max(radius[0], hWidth), w / 2 - hWidth * offset),
         Math.min(Math.max(radius[1], vWidth), h / 2 - vWidth * offset)];
