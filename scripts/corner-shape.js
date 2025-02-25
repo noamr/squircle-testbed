@@ -35,7 +35,6 @@ function compute_outer_corners(x0, y0, x1, y1, wrl, wtb, curvature) {
   // The outer normal offset is the intercept of the line
   // parallel to the tangent, at distance.
   const outer_offset = norm_b + slope * (norm_a - 1);
-  console.log({slope, magnitude, outer_offset})
 
   if (x1 > x0) {
     if (y1 > y0) {
