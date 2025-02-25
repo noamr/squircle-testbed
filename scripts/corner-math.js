@@ -58,6 +58,22 @@ export function control_points_for_superellipse(k) {
  * @returns number
  */
 export function offset_for_curvature(curvature) {
-  return Math.pow(2, 1 - (Math.log2(curvature) + 1)/2) - 1;
+  if (curvature === 0)
+    return 1;
+  if (curvature >= 2)
+    return 0;
+  // Find the approximate slope & magnitude of the superellipse's tangent
+  const a = Math.pow(0.5, 1/curvature);
+  const b = 1 - a;
+  const slope = a / b;
+  const magnitude = Math.hypot(a, b);
+  // Normalize a & b
+  const norm_a = a / magnitude;
+  const norm_b = b / magnitude;
+
+  // The outer normal offset is the intercept of the line
+  // parallel to the tangent, at distance.
+
+  return norm_b + slope * (norm_a - 1);
 }
 

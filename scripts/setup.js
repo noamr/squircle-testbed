@@ -1,5 +1,5 @@
 import {render} from "./corner-shape.js";
-
+import { offset_for_curvature } from "./corner-math.js";
 function fix_style(style, w, h) {
   ["top", "bottom"].forEach((vSide) =>
     ["left", "right"].forEach((hSide) => {
@@ -20,7 +20,11 @@ function fix_style(style, w, h) {
       if (String(radius[1]).endsWith("%"))
         radius[1] = (parseFloat(radius[1]) * h) / 100;
       style[`corner-${vSide}-${hSide}-shape`] = shape;
-      radius = [Math.min(Math.max(radius[0], hWidth), w / 2), Math.min(Math.max(radius[1], vWidth), h / 2)];
+      const offset = offset_for_curvature(shape);
+      console.log(radius)
+      radius = [
+        Math.min(Math.max(radius[0], hWidth), w / 2 - hWidth * offset),
+        Math.min(Math.max(radius[1], vWidth), h / 2 - vWidth * offset)];
       style[`border-${vSide}-${hSide}-radius`] = radius;
       style[`border-${hSide}-width`] = hWidth;
       style[`border-${vSide}-width`] = vWidth;
