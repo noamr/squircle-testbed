@@ -1,12 +1,20 @@
+function superellipse_at(curvature, t = 0.5) {
+  return Math.pow(t, 1 / curvature)
+}
+
+function distance_ratio_to_curvature(d) {
+  return Math.log(0.5) / Math.log(d);
+}
+
 /**
  * @param {number} s
  * @param {number} t
  * @returns {x: number, y: number}
  */
 export function se(s, t = 0.5) {
-  const n = Math.pow(2, s);
-  const x = Math.pow(t, 1 / n);
-  const y = Math.pow(1 - t, 1 / n);
+  const curvature = Math.pow(2, s);
+  const x = superellipse_at(curvature);
+  const y = superellipse_at(curvature, 1 - t);
   return { x, y };
 }
 
@@ -63,7 +71,7 @@ export function offset_for_curvature(curvature) {
   if (curvature >= 2)
     return 0;
   // Find the approximate slope & magnitude of the superellipse's tangent
-  const a = Math.pow(0.5, 1/curvature);
+  const a = superellipse_at(curvature);
   const b = 1 - a;
   const slope = a / b;
   const magnitude = Math.hypot(a, b);
@@ -77,3 +85,15 @@ export function offset_for_curvature(curvature) {
   return norm_b + slope * (norm_a - 1);
 }
 
+export function correct_inner_curvature(curvature, [ox0, oy0, ox1, oy1], [ix0, iy0, ix1, iy1], dx, dy) {
+  if ((dx === 0 && dy === 0) || curvature >= 2 || curvature === 0)
+    return curvature;
+  const cx = superellipse_at(curvature);
+  const cy = 1 - cx;
+  const [ocx, ocy] = [ox0 + (ox1 - ox0) * cx, oy0 + (oy1 - oy0) * cy];
+  const [icx, icy] = [ocx + dx / Math.SQRT2, ocy + dy / Math.SQRT2];
+  const dist_from_nearest_corner = Math.hypot(icx - ix0, icy - iy1);
+  const total_dist = Math.hypot(ix1 - ix0, iy1 - iy0);
+  const ratio = dist_from_nearest_corner / total_dist;
+  return Math.log(.5) / Math.log(ratio);
+}
