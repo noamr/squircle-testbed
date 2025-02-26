@@ -2,10 +2,6 @@ function superellipse_at(curvature, t = 0.5) {
   return Math.pow(t, 1 / curvature)
 }
 
-function distance_ratio_to_curvature(d) {
-  return Math.log(0.5) / Math.log(d);
-}
-
 /**
  * @param {number} s
  * @param {number} t
@@ -66,13 +62,14 @@ export function control_points_for_superellipse(k) {
  * @returns number
  */
 export function offset_for_curvature(curvature) {
-  if (curvature === 0)
+  if (curvature < 0.5)
     return 1;
-  if (curvature >= 2)
+  if (curvature > 2)
     return 0;
   // Find the approximate slope & magnitude of the superellipse's tangent
-  const a = superellipse_at(curvature);
-  const b = 1 - a;
+  const x = superellipse_at(curvature);
+  const y = 1 - x;
+  const [a, b] = [x, y].map(m => 2 * m - 0.5);
   const slope = a / b;
   const magnitude = Math.hypot(a, b);
   // Normalize a & b
@@ -81,8 +78,8 @@ export function offset_for_curvature(curvature) {
 
   // The outer normal offset is the intercept of the line
   // parallel to the tangent, at distance.
-
-  return norm_b + slope * (norm_a - 1);
+  const value = norm_b + slope * (norm_a - 1);
+  return value;
 }
 
 export function correct_inner_curvature(curvature, [ox0, oy0, ox1, oy1], [ix0, iy0, ix1, iy1], dx, dy) {
