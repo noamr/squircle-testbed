@@ -66,10 +66,12 @@ export function offset_for_curvature(curvature) {
     return 1;
   if (curvature > 2)
     return 0;
-  // Find the approximate slope & magnitude of the superellipse's tangent
+  // Find the superellipse's control point.
+  // we do that by approximating the superellipse as a quadratic
+  // curve that has the same point at t = 0.5.
   const x = superellipse_at(curvature);
-  const y = 1 - x;
-  const [a, b] = [x, y].map(m => 2 * m - 0.5);
+  const [a, b] = [x, 1 - x].map(m => 2 * m - 0.5);
+
   const slope = a / b;
   const magnitude = Math.hypot(a, b);
   // Normalize a & b
@@ -85,12 +87,26 @@ export function offset_for_curvature(curvature) {
 export function correct_inner_curvature(curvature, [ox0, oy0, ox1, oy1], [ix0, iy0, ix1, iy1], dx, dy) {
   if ((dx === 0 && dy === 0) || curvature >= 2 || curvature === 0)
     return curvature;
+
+  // Find the superellipse values for the curvature at 0.5.
   const cx = superellipse_at(curvature);
   const cy = 1 - cx;
+
+  // Find that point for the outer rect.
   const [ocx, ocy] = [ox0 + (ox1 - ox0) * cx, oy0 + (oy1 - oy0) * cy];
+
+  // The point for the inner rect should be diagonal to the
+  // outer point, with the given distance.
   const [icx, icy] = [ocx + dx / Math.SQRT2, ocy + dy / Math.SQRT2];
+
+  // Find the distance of that point from the corner.
   const dist_from_nearest_corner = Math.hypot(icx - ix0, icy - iy1);
+
+  // Find the ratio of that distance from the overall distance
+  // This would be the superellipse at t=0.5 for the internal curve.
   const total_dist = Math.hypot(ix1 - ix0, iy1 - iy0);
   const ratio = dist_from_nearest_corner / total_dist;
+
+  // Find the curvature given the t=0.5 value.
   return Math.log(.5) / Math.log(ratio);
 }
