@@ -133,7 +133,7 @@ export function render(style, ctx, width, height) {
     width - style['border-bottom-right-radius'][0] - style['border-bottom-width'] * offset_for_curvature(style['corner-bottom-right-shape']),
     height - style['border-bottom-width'],
     width - style['border-right-width'],
-    height - style['border-bottom-right-radius'][1] - style['border-left-width'] * offset_for_curvature(style['corner-bottom-right-shape']),
+    height - style['border-bottom-right-radius'][1] - style['border-right-width'] * offset_for_curvature(style['corner-bottom-right-shape']),
 
     style['corner-bottom-right-shape'],
     style['border-bottom-color'],
@@ -177,25 +177,25 @@ export function render(style, ctx, width, height) {
   drawSide(
     ctx,
     0,
-    style['border-top-left-radius'][1],
+    Math.max(style['border-top-left-radius'][1], style['border-top-width']),
     style['border-left-width'],
     height - style['border-bottom-left-radius'][1],
     style['border-left-color']
   )
 
-  // top-let
+  // top-left
   drawCorner(
     ctx,
 
     style['border-top-left-radius'][0],
     0,
     0,
-    style['border-top-left-radius'][1],
+    Math.max(style['border-top-left-radius'][1], style['border-top-width']) ,
 
     style['border-top-left-radius'][0] + style['border-top-width'] * offset_for_curvature(style['corner-top-left-shape']),
     style['border-top-width'],
     style['border-left-width'],
-    style['border-top-left-radius'][1] + style['border-left-width'] * offset_for_curvature(style['corner-top-left-shape']),
+    Math.max(style['border-top-left-radius'][1], style['border-top-width']) + style['border-left-width'] * offset_for_curvature(style['corner-top-left-shape']),
 
     style['corner-top-left-shape'],
     style['border-top-color'],
