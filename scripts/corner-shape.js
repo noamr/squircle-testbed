@@ -177,7 +177,7 @@ export function render(style, ctx, width, height) {
   drawSide(
     ctx,
     0,
-    Math.max(style['border-top-left-radius'][1], style['border-top-width']),
+    style['border-top-left-radius'][1],
     style['border-left-width'],
     height - style['border-bottom-left-radius'][1],
     style['border-left-color']
@@ -190,12 +190,12 @@ export function render(style, ctx, width, height) {
     style['border-top-left-radius'][0],
     0,
     0,
-    Math.max(style['border-top-left-radius'][1], style['border-top-width']) ,
+    style['border-top-left-radius'][1],
 
-    style['border-top-left-radius'][0] + style['border-top-width'] * offset_for_curvature(style['corner-top-left-shape']),
+    style['border-top-left-radius'][0] + style['border-left-width'] * offset_for_curvature(style['corner-top-left-shape']),
     style['border-top-width'],
     style['border-left-width'],
-    Math.max(style['border-top-left-radius'][1], style['border-top-width']) + style['border-left-width'] * offset_for_curvature(style['corner-top-left-shape']),
+    style['border-top-left-radius'][1] + style['border-top-width'] * offset_for_curvature(style['corner-top-left-shape']),
 
     style['corner-top-left-shape'],
     style['border-top-color'],
