@@ -22,6 +22,11 @@ class Point {
     {
         return new Point(this.x * scale.width, this.y * scale.height);
     }
+
+    addedTo(point)
+    {
+        return new Point(this.x + point.x, this.y + point.y);
+    }
     
     clone()
     {
