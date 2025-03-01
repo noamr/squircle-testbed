@@ -111,13 +111,8 @@
     <script src="custom-elements/value-slider.js"></script>
     <script src="custom-elements/popup.js"></script>
 
-    <script src="border-renderer.js"></script>
-    <script src="scripts/scripts.js"></script>
-    <script>
-        window.addEventListener('load', () => {
-            windowController = new WindowController();
-        }, false);
-    </script>
+    <script src="scripts/border-renderer.js" type="module"></script>
+    <script src="scripts/scripts.js" type="module"></script>
 </head>
 <body>
     <main>
@@ -129,10 +124,10 @@
         <section class="controls">
             <div class="container">
                 <div class="control-group">
-                    <label>Corner style:</label>
+                    <label style="color: darkred">Corner style:</label>
                     <div class="labeled-control">
                         <custom-popup id="corner-style-select"></custom-popup>
-                        <input id="show-sample" type="checkbox"><label for="show-sample">Show</label>
+                        <input id="show-sample" type="checkbox" checked><label for="show-sample">Show</label>
                     </div>
 
                     <div class="labeled-control">
@@ -159,7 +154,7 @@
 
                 <label>Superellipse parameter:</label>
                 <div class="labeled-control">
-                    <label class="k-label">K</label><value-slider class="slider" id="k-slider" min="-10" max="10" step="0.005" value=1></value-slider>
+                    <label class="k-label">K</label><value-slider class="slider" id="k-slider" min="0" max="100" step="0.005" value=1></value-slider>
                 </div>
                 <div class="labeled-control">
                     <input id="zoom" type="checkbox"><label for="zoom">Zoom</label>

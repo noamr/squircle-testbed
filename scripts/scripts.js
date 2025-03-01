@@ -1,5 +1,12 @@
-"use strict";
-
+import {
+    cornerStyleNone,
+    cornerStyleRounded,
+    cornerStyleSuperellipse,
+    cornerStyleSuperellipseApproximation,
+    cornerStyleContinuousRounded,
+    ShapeParameters,
+    BorderRenderer,
+} from "./border-renderer.js";
 
 const cornerStyles = [
     {
@@ -16,6 +23,11 @@ const cornerStyles = [
         name: 'Superellipse',
         value: 'superellipse',
         data: cornerStyleSuperellipse
+    },
+    {
+        name: 'Superellipse Approximation',
+        value: 'superellipseaprox',
+        data: cornerStyleSuperellipseApproximation
     },
     {
         name: 'Continuous Rounded (Apple)',
@@ -84,7 +96,7 @@ class WindowController {
                 }
             }
         });
-        referenceCornerStyleSelect.selectedIndex = 1;
+        referenceCornerStyleSelect.selectedIndex = 3;
 
         const showSampleCheckbox = document.getElementById('show-sample');
         showSampleCheckbox.addEventListener('change', (event) => {
@@ -116,7 +128,6 @@ class WindowController {
             this.#parametersChanged();
         });
         this.parameters.showReferenceControlPoints = showReferenceControlPointsCheckbox.checked;
-
 
 
         const zoomCheckbox = document.getElementById('zoom');
@@ -166,3 +177,7 @@ class WindowController {
     }
 }
 
+let windowController;
+window.addEventListener('load', () => {
+    windowController = new WindowController();
+}, false);

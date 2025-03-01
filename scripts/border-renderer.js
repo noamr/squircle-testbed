@@ -1,22 +1,34 @@
-"use strict";
-
-
+import {
+    control_points_for_superellipse
+} from "./corner-math.js";
 
 const cornerTopLeft = 0;
 const cornerTopRight = 1;
 const cornerBottomRight = 2;
 const cornerBottomLeft = 3;
 
-const cornerStyleNone = 'none';
-const cornerStyleRounded = 'rounded';
-const cornerStyleSuperellipse = 'superellipse';
-const cornerStyleContinuousRounded = 'continuous-rounded';
+export const cornerStyleNone = 'none';
+export const cornerStyleRounded = 'rounded';
+export const cornerStyleSuperellipse = 'superellipse';
+export const cornerStyleSuperellipseApproximation = 'superellipseapprox';
+export const cornerStyleContinuousRounded = 'continuous-rounded';
 
 
 const shapeIDSample = 'sample';
 const shapeIDReference = 'reference';
 
-class ShapeParameters {
+function valueToSuperEllipseK(v)
+{
+    if (v === 0)
+        return 0.00001;
+
+    if (v >= 100)
+        return 1000;
+
+    return Math.log(0.5) / Math.log(v / 100);
+}
+
+export class ShapeParameters {
     constructor()
     {
         this.sampleBorderRadius = 0.25;
@@ -37,7 +49,7 @@ class ShapeParameters {
     }
 }
 
-class BorderRenderer {
+export class BorderRenderer {
     constructor(canvasElement, parameters)
     {
         this.canvasElement = canvasElement;
@@ -192,6 +204,9 @@ class BorderRenderer {
         case cornerStyleSuperellipse:
             this.#addShapeSuperellipseCorner(shapeSegments, cornerPoint, cornerSize, corner);
             break;
+        case cornerStyleSuperellipseApproximation:
+            this.#addShapeSuperellipseApproxCorner(shapeSegments, cornerPoint, cornerSize, corner);
+            break;
         case cornerStyleContinuousRounded:
             this.#addShapeContinuousRoundedCorner(shapeSegments, cornerPoint, cornerSize, corner);
             break;
@@ -293,7 +308,9 @@ class BorderRenderer {
         }
 
         const steps = Math.floor(Math.max(cornerSize.width, cornerSize.height) / 2);
-        const s = this._parameters.superEllipseK;
+        const k = valueToSuperEllipseK(this._parameters.superEllipseK);
+
+        const s = -Math.log2(k);
 
         for (let i = 0; i < steps; ++i) {
             let t = i / (steps - 1);
@@ -309,6 +326,76 @@ class BorderRenderer {
             shapeSegments.push(new ShapeSegmentLine(Absolute, point));
 
         }
+    }
+
+    #addShapeSuperellipseApproxCorner(shapeSegments, cornerPoint, cornerSize, corner)
+    {
+        let cornerScale;
+        switch (corner) {
+        case cornerTopLeft:
+            cornerScale = new Size(1, 1)
+            break;
+        case cornerTopRight:
+            cornerScale = new Size(-1, 1)
+            break;
+        case cornerBottomRight:
+            cornerScale = new Size(-1, -1)
+            break;
+        case cornerBottomLeft:
+            cornerScale = new Size(1, -1)
+            break;
+        }
+
+        const k = valueToSuperEllipseK(this._parameters.superEllipseK);
+        
+        const flatControlPoints = control_points_for_superellipse(k);
+        // Undo the flipping.
+        const controlPoints = flatControlPoints.map((v) => { return new Point(v[0], 1 - v[1]); });
+
+        let destPoint;
+        switch (corner) {
+        case cornerTopLeft:
+            destPoint = new Point(cornerPoint.x + cornerSize.width, cornerPoint.y);
+            break;
+        case cornerTopRight:
+            destPoint = new Point(cornerPoint.x, cornerPoint.y + cornerSize.height);
+            controlPoints.reverse();
+            break;
+        case cornerBottomRight:
+            destPoint = new Point(cornerPoint.x - cornerSize.width, cornerPoint.y);
+            break;
+        case cornerBottomLeft:
+            destPoint = new Point(cornerPoint.x, cornerPoint.y - cornerSize.height);
+            controlPoints.reverse();
+            break;
+        }
+        
+        const cornerMapScale = cornerSize.scaledBy(cornerScale);
+
+        let midPoint = controlPoints[2];
+        midPoint = midPoint.scaledBy(cornerSize);
+        midPoint = midPoint.scaledBy(cornerScale);
+        midPoint = midPoint.addedTo(cornerPoint);
+
+        let fromControlPoint = controlPoints[0];
+        fromControlPoint = fromControlPoint.scaledBy(cornerMapScale);
+        fromControlPoint = fromControlPoint.addedTo(cornerPoint);
+
+        let toControlPoint = controlPoints[1];
+        toControlPoint = toControlPoint.scaledBy(cornerMapScale);
+        toControlPoint = toControlPoint.addedTo(cornerPoint);
+
+        shapeSegments.push(new ShapeSegmentCurve(Absolute, fromControlPoint, toControlPoint, midPoint));
+
+        fromControlPoint = controlPoints[3];
+        fromControlPoint = fromControlPoint.scaledBy(cornerMapScale);
+        fromControlPoint = fromControlPoint.addedTo(cornerPoint);
+
+        toControlPoint = controlPoints[4];
+        toControlPoint = toControlPoint.scaledBy(cornerMapScale);
+        toControlPoint = toControlPoint.addedTo(cornerPoint);
+
+        shapeSegments.push(new ShapeSegmentCurve(Absolute, fromControlPoint, toControlPoint, destPoint));
     }
     
     #addShapeContinuousRoundedCorner(shapeSegments, cornerPoint, cornerSize, corner)
