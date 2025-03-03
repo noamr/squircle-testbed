@@ -9,7 +9,7 @@ function superellipse_at(curvature, t = 0.5) {
  */
 export function se(s, t = 0.5) {
   const curvature = Math.pow(2, s);
-  const x = superellipse_at(curvature);
+  const x = superellipse_at(curvature, t);
   const y = superellipse_at(curvature, 1 - t);
   return { x, y };
 }
