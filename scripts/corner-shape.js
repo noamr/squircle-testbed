@@ -90,6 +90,11 @@ export function render(style, ctx, width, height) {
     ]
   }
 
+  function superellipse_center([x0, y0, x1, y1], k) {
+    const {x, y} = se(1/k);
+    return [x0 + x * (x1 - x0), y0 + (1-y) * (y1 - y0)]
+  }
+
   function draw_inner_corner(corner) {
     const {shape, outer, sw} = params[corner];
     const inner = calc_inner(outer, sw);
@@ -113,7 +118,94 @@ export function render(style, ctx, width, height) {
   draw_inner_corner('top-left');
 
   ctx.closePath();
-  ctx.fill("evenodd");
+  ctx.clip("evenodd");
+  ctx.beginPath();
+
+  {
+    let {outer, sw, shape} = params["top-left"];
+    const inner = inner_rect('top-left');
+    ctx.moveTo(0, 0);
+    ctx.lineTo(...superellipse_center(outer, shape))
+    ctx.lineTo(...superellipse_center(inner, shape))
+    ctx.lineTo(inner[2], inner[1]);
+    ctx.lineTo(inner[2], sw[1]);
+  }
+
+  {
+    let {outer, sw, shape} = params["top-right"];
+    const inner = inner_rect('top-right');
+    ctx.lineTo(inner[0], sw[0]);
+    ctx.lineTo(inner[0], inner[3]);
+    ctx.lineTo(...superellipse_center(inner, shape))
+    ctx.lineTo(...superellipse_center(outer, shape))
+    ctx.lineTo(width, 0);
+    ctx.fillStyle = style['border-top-color'];
+    ctx.fill("nonzero");
+
+    ctx.beginPath();
+    ctx.lineTo(width, 0);
+    ctx.lineTo(...superellipse_center(outer, shape))
+    ctx.lineTo(...superellipse_center(inner, shape))
+    ctx.lineTo(inner[0], inner[3]);
+    ctx.lineTo(width - sw[1], inner[3]);
+  }
+
+  {
+    let {outer, sw, shape} = params["bottom-right"];
+    const inner = inner_rect('bottom-right');
+    ctx.lineTo(width - sw[0], inner[1]);
+    ctx.lineTo(inner[2], inner[1]);
+    ctx.lineTo(...superellipse_center(inner, shape))
+    ctx.lineTo(...superellipse_center(outer, shape))
+    ctx.lineTo(width, height);
+
+    ctx.closePath();
+    ctx.fillStyle = style['border-right-color'];
+    ctx.fill("nonzero");
+
+    ctx.beginPath();
+    ctx.lineTo(width, height);
+    ctx.lineTo(...superellipse_center(outer, shape))
+    ctx.lineTo(...superellipse_center(inner, shape))
+    ctx.lineTo(inner[2], inner[1]);
+  }
+
+
+  {
+    let {outer, sw, shape} = params["bottom-left"];
+    const inner = inner_rect('bottom-left');
+    ctx.lineTo(inner[0], height - sw[0]);
+    ctx.lineTo(inner[0], inner[3]);
+    ctx.lineTo(...superellipse_center(inner, shape))
+    ctx.lineTo(...superellipse_center(outer, shape))
+    ctx.lineTo(0, height);
+
+    ctx.closePath();
+    ctx.fillStyle = style['border-bottom-color'];
+    ctx.fill("nonzero");
+
+    ctx.beginPath();
+
+    ctx.lineTo(0, height);
+    ctx.lineTo(...superellipse_center(outer, shape))
+    ctx.lineTo(...superellipse_center(inner, shape))
+    ctx.lineTo(inner[0], inner[3]);
+  }
+
+  {
+    let {outer, sw, shape} = params["top-left"];
+    const inner = inner_rect('top-left');
+    ctx.lineTo(sw[0], inner[1]);
+    ctx.lineTo(inner[2], inner[1]);
+    ctx.lineTo(...superellipse_center(inner, shape))
+    ctx.lineTo(...superellipse_center(outer, shape))
+    ctx.lineTo(outer[2], outer[1]);
+    ctx.lineTo(0, 0);
+    ctx.closePath();
+    ctx.fillStyle = style['border-left-color'];
+    ctx.fill("nonzero");
+  }
+
   /*
   ctx.beginPath();
   ctx.moveTo(0, 0);
