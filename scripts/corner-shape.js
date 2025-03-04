@@ -91,7 +91,9 @@ export function render(style, ctx, width, height) {
   }
 
   function superellipse_center([x0, y0, x1, y1], k) {
-    const {x, y} = se(1/k);
+    if (Math.sign(x1 - x0) !== Math.sign(y1 - y0))
+      k = 1 / k;
+    const {x, y} = se(k);
     return [x0 + x * (x1 - x0), y0 + (1-y) * (y1 - y0)]
   }
 
@@ -136,6 +138,7 @@ export function render(style, ctx, width, height) {
     const inner = inner_rect('top-right');
     ctx.lineTo(inner[0], sw[0]);
     ctx.lineTo(inner[0], inner[3]);
+    console.log(superellipse_center(outer, shape), shape, outer)
     ctx.lineTo(...superellipse_center(inner, shape))
     ctx.lineTo(...superellipse_center(outer, shape))
     ctx.lineTo(width, 0);
@@ -205,72 +208,4 @@ export function render(style, ctx, width, height) {
     ctx.fillStyle = style['border-left-color'];
     ctx.fill("nonzero");
   }
-
-  /*
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-
-  shape = params['top-left'].shape;
-  let {outer} = params['top-left']
-  let inner = inner_rect('top-left');
-  outer = [outer[0], outer[2], outer[1], outer[3]];
-  inner = [inner[0], inner[2], inner[1], inner[3]];
-  let sec = se(1/shape);
-  ctx.lineTo(...superellipse(outer, shape));
-  ctx.lineTo(...superellipse(inner, shape));
-  ctx.lineTo(inner[2], inner[1] + sec.y * (inner[1] - inner[3]));
-  ctx.lineTo(inner[2], bw.top);
-
-  shape = params['top-right'].shape;
-  outer = params['top-right'].outer;
-  inner = inner_rect('top-right');
-  sec = se(1/shape);
-  ctx.lineTo(inner[0], bw.top);
-  ctx.lineTo(inner[0], inner[3]);
-  ctx.lineTo(...superellipse(inner, shape));
-  ctx.lineTo(...superellipse(outer, shape));
-  ctx.lineTo(width, 0);
-  ctx.closePath();
-  ctx.fillStyle = style['border-top-color'];
-  ctx.fill();
-
-  shape = params['bottom-right'].shape;
-  outer = params['bottom-right'].outer;
-  inner = inner_rect('bottom-right');
-  sec = se(1/shape);
-  ctx.beginPath();
-  ctx.moveTo(width, height);
-  ctx.lineTo(...superellipse(outer, shape));
-  ctx.lineTo(...superellipse(inner, shape));
-  ctx.lineTo(inner[2], inner[1] + sec.y * (inner[1] - inner[3]));
-  ctx.lineTo(inner[2], height - bw.bottom);
-  ctx.closePath();
-  ctx.fillStyle = style['border-right-color'];
-  ctx.fill();
-  /*
-  ctx.beginPath();
-  ctx.moveTo(width, 0);
-  ctx.lineTo(width - style['border-top-right-radius'][0] - style['border-right-width'], style['border-top-right-radius'][1] + style['border-top-width']);
-  ctx.lineTo(width - style['border-right-width'], height / 2);
-  ctx.lineTo(width - style['border-bottom-right-radius'][0] - style['border-right-width'], height - style['border-bottom-width'] - style['border-bottom-right-radius'][1]);
-  ctx.lineTo(width, height);
-  ctx.fillStyle = style['border-right-color'];
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(width, height);
-  ctx.lineTo(width - style['border-bottom-right-radius'][0] - style['border-right-width'], height - style['border-bottom-width'] - style['border-bottom-right-radius'][1]);
-  ctx.lineTo(width / 2, height - style['border-bottom-width']);
-  ctx.lineTo(style['border-bottom-left-radius'][0] + style['border-left-width'], height - style['border-bottom-left-radius'][1] - style['border-bottom-width']);
-  ctx.lineTo(0, height);
-  ctx.fillStyle = style['border-bottom-color'];
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(0, height);
-  ctx.lineTo(style['border-bottom-left-radius'][0] + style['border-left-width'], height - style['border-bottom-left-radius'][1] - style['border-bottom-width']);
-  ctx.lineTo(style['border-left-width'], height / 2);
-  ctx.lineTo(style['border-top-left-radius'][0] + style['border-left-width'], style['border-top-left-radius'][1] + style['border-top-width']);
-  ctx.lineTo(0, 0);
-  ctx.fillStyle = style['border-left-color'];
-  ctx.fill();
-*/
 }
