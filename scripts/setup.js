@@ -20,10 +20,10 @@ function fix_style(style, w, h) {
       if (String(radius[1]).endsWith("%"))
         radius[1] = (parseFloat(radius[1]) * h) / 100;
       style[`corner-${vSide}-${hSide}-shape`] = shape;
-      const offset = offset_for_curvature(shape);
+      const offset = offset_for_curvature(shape)[1];
       radius = [
-        Math.min(radius[0], w / 2 - hWidth * offset),
-        Math.min(radius[1], h / 2 - vWidth * offset)];
+        Math.min(radius[0], w / 2 + hWidth * offset),
+        Math.min(radius[1], h / 2 + vWidth * offset)];
         style[`border-${vSide}-${hSide}-radius`] = radius;
       style[`border-${hSide}-width`] = hWidth;
       style[`border-${vSide}-width`] = vWidth;

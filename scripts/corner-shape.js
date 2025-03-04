@@ -1,206 +1,125 @@
-import {control_points_for_superellipse, offset_for_curvature, correct_inner_curvature} from "./corner-math.js";
+import {add_corner_to_path, offset_for_curvature, se} from "./corner-math.js";
 
-/**
- *
- * @param {Array<[number, number]} points
- * @param {number} x0
- * @param {number} y0
- * @param {number} x1
- * @param {number} y1
- */
-function map_control_points(points, x0, y0, x1, y1) {
-  return points.flatMap(([x, y]) => [x0 + (x1 - x0) * x, y0 + (y1 - y0) * y]);
+function add_corner(ctx, ax, ay, bx, by, curvature, l1 = null, l2 = null) {
+  const vertex = ((bx - ax) * (by - ay) >= 0) ? { x: ax, y: by } : { x: bx, y: ay };
+  const i_vertex = ((bx - ax) * (by - ay) >= 0) ? { x: bx, y: ay } : { x: ax, y: by };
+  const ver = { x: ax - vertex.x, y: ay - vertex.y };
+  const hor = { x: bx - vertex.x, y: by - vertex.y };
+
+  if (curvature < 0.001) {
+    ctx.lineTo(ax, ay);
+    ctx.lineTo(vertex.x, vertex.y);
+    ctx.lineTo(bx, by);
+    return;
+  }
+
+  if (curvature > 100) {
+    ctx.lineTo(ax, ay);
+    ctx.lineTo(i_vertex.x, i_vertex.y);
+    ctx.lineTo(bx, by);
+    return;
+  }
+  ctx.save();
+  ctx.transform(hor.x, hor.y, ver.x, ver.y, vertex.x, vertex.y);
+  const transform = ctx.getTransform().inverse();
+  [l1, l2] = [l1, l2].map(line => line ?
+    line.map(([x, y]) => transform.transformPoint(new DOMPoint(x, y))) : null);
+  add_corner_to_path(ctx, curvature, l1, l2);
+  ctx.restore();
 }
 
-/**
- *
- * @param {CanvasRenderingContext2D} ctx
- * @param {number} ox0
- * @param {number} oy0
- * @param {number} ox1
- * @param {number} oy1
- * @param {number} ix0
- * @param {number} iy0
- * @param {number} ix1
- * @param {number} iy1
- * @param {number} curvature
- * @param {string} color1
- * @param {string} color2
- */
-function drawCorner(ctx,
-  ox0, oy0, ox1, oy1,
-  ix0, iy0, ix1, iy1,
-  curvature, color1, color2, dx = 0, dy = 0)
-{
-  const inner_curvature = correct_inner_curvature(curvature,
-    [ox0, oy0, ox1, oy1],
-    [ix0, iy0, ix1, iy1],
-    dx, dy)
-  const outer_control_points = control_points_for_superellipse(curvature)
-  const ocp = map_control_points(outer_control_points, ox0, oy0, ox1, oy1);
-  const inner_control_points = control_points_for_superellipse(inner_curvature)
-  const icp = map_control_points(inner_control_points, ix0, iy0, ix1, iy1);
-
-  let path = new Path2D();
-  path.moveTo(ix0, iy0);
-  path.bezierCurveTo(...icp.slice(0, 6));
-  path.lineTo(ocp[4], ocp[5]);
-  path.bezierCurveTo(ocp[2], ocp[3], ocp[0], ocp[1], ox0, oy0);
-  ctx.fillStyle = color1;
-  ctx.fill(path, "nonzero");
-
-  path = new Path2D();
-  path.moveTo(icp[4], icp[5]);
-  path.bezierCurveTo(...icp.slice(6), ix1, iy1);
-  path.lineTo(ox1, oy1);
-  path.bezierCurveTo(ocp[8], ocp[9], ocp[6], ocp[7], ocp[4], ocp[5]);
-  ctx.fillStyle = color2;
-  ctx.fill(path, "nonzero");
-}
-
-/**
- *
- * @param {CanvasRenderingContext2D} ctx
- * @param {number} x0
- * @param {number} y0
- * @param {number} x1
- * @param {number} y1
- * @param {number} color
- */
-function drawSide(ctx,
-  x0, y0, x1, y1, color
-) {
-  ctx.fillStyle = color;
-  ctx.fillRect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x0 - x1), Math.abs(y0 - y1));
-}
-/**
- * @param {RectStyle} style
- * @param {CanvasRenderingContext2D} ctx
- * @param {number} width
- * @param {number} height
- */
 export function render(style, ctx, width, height) {
-  // Top
-  drawSide(
-    ctx,
-    style['border-top-left-radius'][0],
-    0,
-    width - style['border-top-right-radius'][0],
-    style['border-top-width'],
-    style['border-top-color']
-  );
+  let ax = width - style['border-top-right-radius'][0];
+  let ay = 0;
+  ctx.moveTo(ax, ay);
 
-  // Top right
-  drawCorner(
-    ctx,
-
-    width - style['border-top-right-radius'][0],
-    0,
-    width,
-    style['border-top-right-radius'][1],
-
-    width - style['border-top-right-radius'][0] - style['border-top-width'] * offset_for_curvature(style['corner-top-right-shape']),
-    style['border-top-width'],
-    width - style['border-right-width'],
-    style['border-top-right-radius'][1] + style['border-right-width'] * offset_for_curvature(style['corner-top-right-shape']),
-
-    style['corner-top-right-shape'],
-    style['border-top-color'],
-    style['border-right-color'],
-
-    -style['border-right-width'],
-    style['border-top-width']
-  );
-  // Right
-  drawSide(
-    ctx,
-    width,
-    style['border-top-right-radius'][1],
-    width - style['border-right-width'],
-    height - style['border-bottom-right-radius'][1],
-    style['border-right-color']
-  );
-
-  // Bottom right
-  drawCorner(
-    ctx,
-
-    width - style['border-bottom-right-radius'][0],
-    height,
-    width,
-    height - style['border-bottom-right-radius'][1],
-
-    width - style['border-bottom-right-radius'][0] - style['border-bottom-width'] * offset_for_curvature(style['corner-bottom-right-shape']),
-    height - style['border-bottom-width'],
-    width - style['border-right-width'],
-    height - style['border-bottom-right-radius'][1] - style['border-right-width'] * offset_for_curvature(style['corner-bottom-right-shape']),
-
-    style['corner-bottom-right-shape'],
-    style['border-bottom-color'],
-    style['border-right-color'],
-
-    -style['border-right-width'],
-    -style['border-bottom-width'],
-  );
-  // Bottom
-  drawSide(
-    ctx,
-    width - style['border-bottom-right-radius'][0],
-    height,
-    style['border-bottom-left-radius'][0],
-    height - style['border-bottom-width'],
-    style['border-bottom-color']
-  );
+  let bx = width;
+  let by = style['border-top-right-radius'][1];
+  let shape = style['corner-top-right-shape'];
+  add_corner(ctx, ax, ay, bx, by, shape);
+  ax = width;
+  ay = height - style['border-bottom-right-radius'][1];
+  ctx.lineTo(ax, ay);
+  bx = width - style['border-bottom-right-radius'][0];
+  by = height;
+  shape = style['corner-bottom-right-shape'];
+  add_corner(ctx, ax, ay, bx, by, shape);
+  ax = bx;
+  ay = by;
+  bx = style['border-bottom-left-radius'][0];
+  by = height;
+  ctx.lineTo(bx, by);
+  ax = bx;
+  ay = by;
+  bx = 0;
+  by = height - style['border-bottom-left-radius'][1];
+  shape = style['corner-bottom-left-shape'];
+  add_corner(ctx, ax, ay, bx, by, shape);
+  ax = bx;
+  ay = by;
+  ax = 0;
+  by = style['border-top-left-radius'][1];
+  ctx.lineTo(bx, by);
+  ax = bx;
+  ay = by;
+  bx = style['border-top-left-radius'][0];
+  by = 0;
+  shape = style['corner-top-left-shape'];
+  add_corner(ctx, ax, ay, bx, by, shape);
+  ax = bx;
+  ay = by;
+  ctx.lineTo(width - style['border-top-right-radius'][0], 0)
+  ctx.closePath();
+  ctx.stroke();
 
 
-  // Bottom left
-  drawCorner(
-    ctx,
+  ctx.beginPath();
+  shape = style['corner-top-right-shape'];
+  let w_tb = style['border-top-width'];
+  let w_rl = style['border-right-width'];
 
-    style['border-bottom-left-radius'][0],
-    height,
-    0,
-    height - style['border-bottom-left-radius'][1],
+  ctx.moveTo(width/2, w_tb)
 
-    style['border-bottom-left-radius'][0] + style['border-bottom-width'] * offset_for_curvature(style['corner-bottom-left-shape']),
-    height - style['border-bottom-width'],
-    style['border-left-width'],
-    height - style['border-bottom-left-radius'][1] - style['border-left-width'] * offset_for_curvature(style['corner-bottom-left-shape']),
+  let offset = offset_for_curvature(shape);
+  ax = width - style['border-top-right-radius'][0] + w_tb * offset[1];
+  ay = w_tb * offset[0];
+  bx = width - w_rl * offset[0];
+  by = style['border-top-right-radius'][1] - w_rl * offset[1];
+  add_corner(ctx, ax, ay, bx, by, shape, [[0, w_tb], [width, w_tb]], [[width - w_rl, 0], [width - w_rl, height]])
 
-    style['corner-bottom-left-shape'],
-    style['border-bottom-color'],
-    style['border-left-color'],
-    style['border-left-width'],
-    -style['border-bottom-width']
-  );
-  // Left
-  drawSide(
-    ctx,
-    0,
-    style['border-top-left-radius'][1],
-    style['border-left-width'],
-    height - style['border-bottom-left-radius'][1],
-    style['border-left-color']
-  )
+  ctx.lineTo(width - w_rl, height / 2)
 
-  // top-left
-  drawCorner(
-    ctx,
+  w_tb = style['border-bottom-width'];
+  shape = style['corner-bottom-right-shape'];
+  offset = offset_for_curvature(shape);
+  ax = width - w_rl * offset[0];
+  ay = height - style['border-bottom-right-radius'][1] + w_rl * offset[1]
+  bx = width - style['border-bottom-right-radius'][0] + w_tb * offset[1];
+  by = height - w_tb * offset[0];
+  add_corner(ctx, ax, ay, bx, by, shape, [[width - w_rl, 0], [width - w_rl, height]], [[0, height - w_tb], [width, height - w_tb]])
 
-    style['border-top-left-radius'][0],
-    0,
-    0,
-    style['border-top-left-radius'][1],
+  ctx.lineTo(width / 2, height - w_tb);
 
-    style['border-top-left-radius'][0] + style['border-left-width'] * offset_for_curvature(style['corner-top-left-shape']),
-    style['border-top-width'],
-    style['border-left-width'],
-    style['border-top-left-radius'][1] + style['border-top-width'] * offset_for_curvature(style['corner-top-left-shape']),
+  shape = style['corner-bottom-left-shape'];
+  w_rl = style['border-left-width'];
+  offset = offset_for_curvature(shape);
+  ax = style['border-bottom-left-radius'][0] - w_tb * offset[1]
+  ay = height - w_tb * offset[0]
+  bx = w_rl * offset[0]
+  by = height - style['border-bottom-left-radius'][1] + w_rl * offset[1]
+  add_corner(ctx, ax, ay, bx, by, shape, [[0, height - w_tb], [width, height - w_tb]], [[w_rl, 0], [w_rl, height]])
+  ax = w_rl;
 
-    style['corner-top-left-shape'],
-    style['border-top-color'],
-    style['border-left-color'],
-    style['border-left-width'],
-    style['border-top-width']
-  );
+  ctx.lineTo(w_rl, height / 2);
+
+  shape = style['corner-top-left-shape'];
+  w_tb = style['border-top-width'];
+  offset = offset_for_curvature(shape);
+  ax = w_rl * offset[0]
+  ay = style['border-top-left-radius'][1] - w_rl * offset[1]
+  bx = style['border-top-left-radius'][0] - w_tb * offset[1]
+  by = w_tb * offset[0]
+  add_corner(ctx, ax, ay, bx, by, shape, [[w_rl, 0], [w_rl, height]], [[0, w_tb], [width, w_tb]])
+  ctx.closePath();
+  ctx.stroke();
 }
