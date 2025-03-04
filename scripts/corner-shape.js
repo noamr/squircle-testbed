@@ -1,10 +1,35 @@
-import {add_corner_to_path, offset_for_curvature, se} from "./corner-math.js";
+import {
+  offset_for_curvature,
+  control_points,
+  se
+} from "./corner-math.js";
+import {
+  Bezier
+} from "https://cdn.jsdelivr.net/npm/bezier-js@6.1.4/src/bezier.min.js"
 
 function add_corner(ctx, ax, ay, bx, by, curvature, l1 = null, l2 = null) {
-  const vertex = ((bx - ax) * (by - ay) >= 0) ? { x: ax, y: by } : { x: bx, y: ay };
-  const i_vertex = ((bx - ax) * (by - ay) >= 0) ? { x: bx, y: ay } : { x: ax, y: by };
-  const ver = { x: ax - vertex.x, y: ay - vertex.y };
-  const hor = { x: bx - vertex.x, y: by - vertex.y };
+  const vertex = ((bx - ax) * (by - ay) >= 0) ? {
+    x: ax,
+    y: by
+  } : {
+    x: bx,
+    y: ay
+  };
+  const i_vertex = ((bx - ax) * (by - ay) >= 0) ? {
+    x: bx,
+    y: ay
+  } : {
+    x: ax,
+    y: by
+  };
+  const ver = {
+    x: ax - vertex.x,
+    y: ay - vertex.y
+  };
+  const hor = {
+    x: bx - vertex.x,
+    y: by - vertex.y
+  };
 
   if (curvature < 0.001) {
     ctx.lineTo(ax, ay);
@@ -13,7 +38,7 @@ function add_corner(ctx, ax, ay, bx, by, curvature, l1 = null, l2 = null) {
     return;
   }
 
-  if (curvature > 100) {
+  if (curvature > 1000) {
     ctx.lineTo(ax, ay);
     ctx.lineTo(i_vertex.x, i_vertex.y);
     ctx.lineTo(bx, by);
@@ -22,9 +47,35 @@ function add_corner(ctx, ax, ay, bx, by, curvature, l1 = null, l2 = null) {
   ctx.save();
   ctx.transform(hor.x, hor.y, ver.x, ver.y, vertex.x, vertex.y);
   const transform = ctx.getTransform().inverse();
-  [l1, l2] = [l1, l2].map(line => line ?
-    line.map(([x, y]) => transform.transformPoint(new DOMPoint(x, y))) : null);
-  add_corner_to_path(ctx, curvature, l1, l2);
+  [l1, l2] = [l1, l2].map(p => p ? Object.fromEntries(p.map(
+    (p, i) => [`p${i + 1}`, transform.transformPoint(new DOMPoint(p[0], p[1]))])) : null);
+  const [P0, P1, P2, P3, P4, P5, P6] = control_points(curvature);
+  const b1 = new Bezier(P0, P1, P2, P3);
+  const b2 = new Bezier(P3, P4, P5, P6);
+  let t1 = l1 === null ? 0 : b1.intersects(l1)[0];
+  let t2 = l2 === null ? 1 : b2.intersects(l2)[0];
+  if (curvature < 0.01 || !t2) {
+    t1 = 0;
+    t2 = 1;
+  }
+
+  if (t1 === 0 && t2 === 1) {
+    ctx.lineTo(P0.x, P0.y);
+    ctx.bezierCurveTo(P1.x, P1.y, P2.x, P2.y, P3.x, P3.y);
+    ctx.bezierCurveTo(P4.x, P4.y, P5.x, P5.y, P6.x, P6.y);
+  } else {
+    const first = b1.split(t1).right.points.flatMap(({
+      x,
+      y
+    }) => [x, y]);
+    const second = b2.split(t2).left.points.flatMap(({
+      x,
+      y
+    }) => [x, y]);
+    ctx.lineTo(first[0], first[1]);
+    ctx.bezierCurveTo(...first.slice(2));
+    ctx.bezierCurveTo(...second.slice(2));
+  }
   ctx.restore();
 }
 
@@ -56,7 +107,10 @@ export function render(style, ctx, width, height) {
   };
 
   function draw_outer_corner(corner) {
-    const {outer, shape} = params[corner];
+    const {
+      outer,
+      shape
+    } = params[corner];
     add_corner(ctx, ...outer, shape);
   }
 
@@ -73,7 +127,11 @@ export function render(style, ctx, width, height) {
   }
 
   function inner_rect(corner) {
-    const {outer, shape, sw} = params[corner];
+    const {
+      outer,
+      shape,
+      sw
+    } = params[corner];
     const inner = calc_inner(outer, sw);
     const offset = offset_for_curvature(shape);
     if (tl_first(inner)) {
@@ -94,15 +152,35 @@ export function render(style, ctx, width, height) {
     if (Math.sign(x1 - x0) !== Math.sign(y1 - y0))
       k = 1 / k;
     const {x, y} = se(k);
-    return [x0 + x * (x1 - x0), y0 + (1-y) * (y1 - y0)]
+    return [x0 + x * (x1 - x0), y0 + (1 - y) * (y1 - y0)]
   }
 
   function draw_inner_corner(corner) {
-    const {shape, outer, sw} = params[corner];
+    const {
+      shape,
+      outer,
+      sw
+    } = params[corner];
     const inner = calc_inner(outer, sw);
-    const trim = tl_first(inner) ?
-      [[[0, outer[1] + inner[1]], [width, outer[1] + inner[1]]], [[outer[2] + inner[2], 0], [outer[2] + inner[2], height]]] :
-      [[[outer[0] + inner[0], 0], [outer[0] + inner[0], width]], [[0, outer[3] + inner[3]], [width, outer[3] + inner[3]]]];
+    const trim = tl_first(inner) ? [
+      [
+        [0, outer[1] + inner[1]],
+        [width, outer[1] + inner[1]]
+      ],
+      [
+        [outer[2] + inner[2], 0],
+        [outer[2] + inner[2], height]
+      ]
+    ] : [
+      [
+        [outer[0] + inner[0], 0],
+        [outer[0] + inner[0], width]
+      ],
+      [
+        [0, outer[3] + inner[3]],
+        [width, outer[3] + inner[3]]
+      ]
+    ];
 
     add_corner(ctx, ...inner_rect(corner), shape, ...trim);
   }
@@ -113,7 +191,7 @@ export function render(style, ctx, width, height) {
   draw_outer_corner('bottom-right');
   draw_outer_corner('bottom-left');
   draw_outer_corner('top-left');
-  ctx.moveTo(width /2, style['border-top-width']);
+  ctx.moveTo(width / 2, style['border-top-width']);
   draw_inner_corner('top-right');
   draw_inner_corner('bottom-right');
   draw_inner_corner('bottom-left');
@@ -124,7 +202,11 @@ export function render(style, ctx, width, height) {
   ctx.beginPath();
 
   {
-    let {outer, sw, shape} = params["top-left"];
+    let {
+      outer,
+      sw,
+      shape
+    } = params["top-left"];
     const inner = inner_rect('top-left');
     ctx.moveTo(0, 0);
     ctx.lineTo(...superellipse_center(outer, shape))
@@ -134,7 +216,11 @@ export function render(style, ctx, width, height) {
   }
 
   {
-    let {outer, sw, shape} = params["top-right"];
+    let {
+      outer,
+      sw,
+      shape
+    } = params["top-right"];
     const inner = inner_rect('top-right');
     ctx.lineTo(inner[0], sw[0]);
     ctx.lineTo(inner[0], inner[3]);
@@ -154,7 +240,11 @@ export function render(style, ctx, width, height) {
   }
 
   {
-    let {outer, sw, shape} = params["bottom-right"];
+    let {
+      outer,
+      sw,
+      shape
+    } = params["bottom-right"];
     const inner = inner_rect('bottom-right');
     ctx.lineTo(width - sw[0], inner[1]);
     ctx.lineTo(inner[2], inner[1]);
@@ -175,7 +265,11 @@ export function render(style, ctx, width, height) {
 
 
   {
-    let {outer, sw, shape} = params["bottom-left"];
+    let {
+      outer,
+      sw,
+      shape
+    } = params["bottom-left"];
     const inner = inner_rect('bottom-left');
     ctx.lineTo(inner[0], height - sw[0]);
     ctx.lineTo(inner[0], inner[3]);
@@ -196,7 +290,11 @@ export function render(style, ctx, width, height) {
   }
 
   {
-    let {outer, sw, shape} = params["top-left"];
+    let {
+      outer,
+      sw,
+      shape
+    } = params["top-left"];
     const inner = inner_rect('top-left');
     ctx.lineTo(sw[0], inner[1]);
     ctx.lineTo(inner[2], inner[1]);
@@ -208,4 +306,5 @@ export function render(style, ctx, width, height) {
     ctx.fillStyle = style['border-left-color'];
     ctx.fill("nonzero");
   }
+
 }
