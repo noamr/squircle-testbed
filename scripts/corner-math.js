@@ -87,7 +87,8 @@ export function add_corner_to_path(path, curvature, l1, l2) {
   const b2 = new Bezier(P3, P4, P5, P6);
   let t1 = l1 === null ? 0 : b1.intersects(l1)[0];
   let t2 = l2 === null ? 1 : b2.intersects(l2)[0];
-  if (t1 >= t2 || curvature < 0.01 || !t2) {
+
+  if (curvature < 0.01 || !t2) {
     t1 = 0;
     t2 = 1;
   }

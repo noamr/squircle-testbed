@@ -32,7 +32,6 @@ export function render(style, ctx, width, height) {
   let ax = width - style['border-top-right-radius'][0];
   let ay = 0;
   ctx.moveTo(ax, ay);
-
   let bx = width;
   let by = style['border-top-right-radius'][1];
   let shape = style['corner-top-right-shape'];
@@ -69,25 +68,17 @@ export function render(style, ctx, width, height) {
   ax = bx;
   ay = by;
   ctx.lineTo(width - style['border-top-right-radius'][0], 0)
-  ctx.closePath();
-  ctx.stroke();
-
-
-  ctx.beginPath();
   shape = style['corner-top-right-shape'];
   let w_tb = style['border-top-width'];
   let w_rl = style['border-right-width'];
 
-  ctx.moveTo(width/2, w_tb)
-
   let offset = offset_for_curvature(shape);
   ax = width - style['border-top-right-radius'][0] + w_tb * offset[1];
   ay = w_tb * offset[0];
+  ctx.moveTo(width /2, w_tb);
   bx = width - w_rl * offset[0];
   by = style['border-top-right-radius'][1] - w_rl * offset[1];
   add_corner(ctx, ax, ay, bx, by, shape, [[0, w_tb], [width, w_tb]], [[width - w_rl, 0], [width - w_rl, height]])
-
-  ctx.lineTo(width - w_rl, height / 2)
 
   w_tb = style['border-bottom-width'];
   shape = style['corner-bottom-right-shape'];
@@ -97,8 +88,6 @@ export function render(style, ctx, width, height) {
   bx = width - style['border-bottom-right-radius'][0] + w_tb * offset[1];
   by = height - w_tb * offset[0];
   add_corner(ctx, ax, ay, bx, by, shape, [[width - w_rl, 0], [width - w_rl, height]], [[0, height - w_tb], [width, height - w_tb]])
-
-  ctx.lineTo(width / 2, height - w_tb);
 
   shape = style['corner-bottom-left-shape'];
   w_rl = style['border-left-width'];
@@ -110,8 +99,6 @@ export function render(style, ctx, width, height) {
   add_corner(ctx, ax, ay, bx, by, shape, [[0, height - w_tb], [width, height - w_tb]], [[w_rl, 0], [w_rl, height]])
   ax = w_rl;
 
-  ctx.lineTo(w_rl, height / 2);
-
   shape = style['corner-top-left-shape'];
   w_tb = style['border-top-width'];
   offset = offset_for_curvature(shape);
@@ -121,5 +108,40 @@ export function render(style, ctx, width, height) {
   by = w_tb * offset[0]
   add_corner(ctx, ax, ay, bx, by, shape, [[w_rl, 0], [w_rl, height]], [[0, w_tb], [width, w_tb]])
   ctx.closePath();
-  ctx.stroke();
+  ctx.clip("evenodd");
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(style['border-top-left-radius'][0] + style['border-left-width'], style['border-top-left-radius'][1] + style['border-top-width']);
+  ctx.lineTo(style['border-top-left-radius'][0] + style['border-top-width'], style['border-top-width']);
+  ctx.lineTo(width / 2, style['border-top-width']);
+  ctx.lineTo(width - style['border-top-right-radius'][0] - style['border-right-width'], style['border-top-right-radius'][1] + style['border-top-width']);
+  ctx.lineTo(width, 0);
+  ctx.closePath();
+  ctx.fillStyle = style['border-top-color'];
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(width, 0);
+  ctx.lineTo(width - style['border-top-right-radius'][0] - style['border-right-width'], style['border-top-right-radius'][1] + style['border-top-width']);
+  ctx.lineTo(width - style['border-right-width'], height / 2);
+  ctx.lineTo(width - style['border-bottom-right-radius'][0] - style['border-right-width'], height - style['border-bottom-width'] - style['border-bottom-right-radius'][1]);
+  ctx.lineTo(width, height);
+  ctx.fillStyle = style['border-right-color'];
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(width, height);
+  ctx.lineTo(width - style['border-bottom-right-radius'][0] - style['border-right-width'], height - style['border-bottom-width'] - style['border-bottom-right-radius'][1]);
+  ctx.lineTo(width / 2, height - style['border-bottom-width']);
+  ctx.lineTo(style['border-bottom-left-radius'][0] + style['border-left-width'], height - style['border-bottom-left-radius'][1] - style['border-bottom-width']);
+  ctx.lineTo(0, height);
+  ctx.fillStyle = style['border-bottom-color'];
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(0, height);
+  ctx.lineTo(style['border-bottom-left-radius'][0] + style['border-left-width'], height - style['border-bottom-left-radius'][1] - style['border-bottom-width']);
+  ctx.lineTo(style['border-left-width'], height / 2);
+  ctx.lineTo(style['border-top-left-radius'][0] + style['border-left-width'], style['border-top-left-radius'][1] + style['border-top-width']);
+  ctx.lineTo(0, 0);
+  ctx.fillStyle = style['border-left-color'];
+  ctx.fill();
+
 }
