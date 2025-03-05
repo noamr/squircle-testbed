@@ -86,17 +86,3 @@ export function control_points(curvature) {
 
   return [P0, P1, P2, P3, P4, P5, P6];
 }
-
-function from_bezier(b) {
-  return b.points.map(({
-    x,
-    y
-  }) => [x, y]);
-}
-
-export function trimmed_control_points(curvature, t1, t2) {
-  const [P0, P1, P2, P3, P4, P5, P6] = control_points(curvature);
-  const b1 = from_bezier(new Bezier(P0, P1, P2, P3));
-  const b2 = from_bezier(new Bezier(P3, P4, P5, P6));
-  return [...b1, ...b2];
-}

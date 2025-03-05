@@ -31,13 +31,6 @@ function add_corner(ctx, ax, ay, bx, by, curvature, l1 = null, l2 = null) {
     y: by - vertex.y
   };
 
-  if (curvature < 0.001) {
-    ctx.lineTo(ax, ay);
-    ctx.lineTo(vertex.x, vertex.y);
-    ctx.lineTo(bx, by);
-    return;
-  }
-
   if (curvature > 1000) {
     ctx.lineTo(ax, ay);
     ctx.lineTo(i_vertex.x, i_vertex.y);
@@ -151,6 +144,10 @@ export function render(style, ctx, width, height) {
   function superellipse_center([x0, y0, x1, y1], k) {
     if (Math.sign(x1 - x0) !== Math.sign(y1 - y0))
       k = 1 / k;
+    if (k < 1) {
+      [x0, y0, x1, y1] = [x1, y1, x0, y0];
+      k = 1/k;
+    }
     const {x, y} = se(k);
     return [x0 + x * (x1 - x0), y0 + (1 - y) * (y1 - y0)]
   }
@@ -224,7 +221,6 @@ export function render(style, ctx, width, height) {
     const inner = inner_rect('top-right');
     ctx.lineTo(inner[0], sw[0]);
     ctx.lineTo(inner[0], inner[3]);
-    console.log(superellipse_center(outer, shape), shape, outer)
     ctx.lineTo(...superellipse_center(inner, shape))
     ctx.lineTo(...superellipse_center(outer, shape))
     ctx.lineTo(width, 0);
