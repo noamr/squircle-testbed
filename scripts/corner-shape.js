@@ -38,10 +38,11 @@ function add_corner(ctx, ax, ay, bx, by, curvature, l1 = null, l2 = null) {
     return;
   }
   ctx.save();
-  ctx.transform(hor.x, hor.y, ver.x, ver.y, vertex.x, vertex.y);
-  const transform = ctx.getTransform().inverse();
+  const transform_vals = [hor.x, hor.y, ver.x, ver.y, vertex.x, vertex.y];
+  ctx.transform(...transform_vals);
+  const inverse_transform = new DOMMatrix(transform_vals).inverse();
   [l1, l2] = [l1, l2].map(p => p ? Object.fromEntries(p.map(
-    (p, i) => [`p${i + 1}`, transform.transformPoint(new DOMPoint(p[0], p[1]))])) : null);
+    (p, i) => [`p${i + 1}`, inverse_transform.transformPoint(new DOMPoint(p[0], p[1]))])) : null);
   const [P0, P1, P2, P3, P4, P5, P6] = control_points(curvature);
   const b1 = new Bezier(P0, P1, P2, P3);
   const b2 = new Bezier(P3, P4, P5, P6);
@@ -82,15 +83,44 @@ export function render(style, ctx, width, height) {
     add_corner(ctx, ...outer_rect, shape);
   }
 
-  function draw_inner_corner(corner) {
-    const {
-      shape,
-      inner_rect,
-      trim
-    } = corner_params[corner];
-    add_corner(ctx, ...inner_rect, shape, ...trim);
+
+  ctx.scale(0.75, 0.75);
+  ctx.translate(60, 60);
+
+  function draw_inner_corner_from_params(params) {
+    add_corner(ctx, ...params.inner_rect, params.shape, ...params.trim);
   }
 
+  function draw_inner_corner(corner) {
+    draw_inner_corner_from_params(corner_params[corner])
+  }
+
+  if (style.shadow) {
+    const {spread, offset, blur, color} = style.shadow;
+    const for_shadow = resolve_corner_params(style, width, height, spread);
+    ctx.save();
+    ctx.filter = `blur(${blur}px)`;
+    ctx.beginPath();
+    ctx.translate(...offset);
+    ctx.lineTo(for_shadow['top-right'].inner_rect[0], -spread);
+    draw_inner_corner_from_params(for_shadow['top-right']);
+    ctx.lineTo(width + spread, for_shadow['top-right'].inner_rect[3])
+    ctx.lineTo(width + spread, for_shadow['bottom-right'].inner_rect[1])
+    draw_inner_corner_from_params(for_shadow['bottom-right']);
+    ctx.lineTo(for_shadow['bottom-right'].inner_rect[2], height + spread);
+    ctx.lineTo(for_shadow['bottom-left'].inner_rect[0], height + spread);
+    draw_inner_corner_from_params(for_shadow['bottom-left']);
+    ctx.lineTo(-spread, for_shadow['bottom-left'].inner_rect[3]);
+    ctx.lineTo(-spread, for_shadow['top-left'].inner_rect[1]);
+    draw_inner_corner_from_params(for_shadow['top-left']);
+    ctx.lineTo(for_shadow['top-left'].inner_rect[2  ], -spread);
+    ctx.fillStyle = color;
+    ctx.fill("evenodd");
+    ctx.closePath();
+    ctx.restore();
+  }
+
+  ctx.beginPath();
   ctx.moveTo(...corner_params['top-right'].outer_rect.slice(0, 2));
 
   draw_outer_corner('top-right');
@@ -103,6 +133,7 @@ export function render(style, ctx, width, height) {
   draw_inner_corner('bottom-left');
   draw_inner_corner('top-left');
 
+  ctx.save();
   ctx.closePath();
   ctx.clip("evenodd");
   ctx.beginPath();
@@ -210,5 +241,15 @@ export function render(style, ctx, width, height) {
     ctx.fillStyle = style['border-left-color'];
     ctx.fill("nonzero");
   }
+
+  ctx.restore();
+  ctx.beginPath();
+  ctx.moveTo(width / 2, style['border-top-width']);
+  draw_inner_corner('top-right');
+  draw_inner_corner('bottom-right');
+  draw_inner_corner('bottom-left');
+  draw_inner_corner('top-left');
+  ctx.fillStyle = "rgba(255, 255, 255, 1)";
+  ctx.fill("nonzero");
 
 }

@@ -15,7 +15,9 @@ section {
   grid-template-areas:
     "top-left top top-right"
     "left center right"
-    "bottom-left bottom bottom-right";
+    "bottom-left bottom bottom-right"
+    "below below below"
+    ;
 }
 
 fieldset {
@@ -34,4 +36,7 @@ fieldset {
 }
 .center {
   grid-area: center;
+}
+.shadow-field {
+  grid-area: below;
 }

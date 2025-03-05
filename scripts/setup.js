@@ -23,6 +23,14 @@ function fix_style(style, w, h) {
       style[`border-${vSide}-${hSide}-radius`] = radius;
       style[`border-${hSide}-width`] = hWidth;
       style[`border-${vSide}-width`] = vWidth;
+      if (style['shadow-offset-width'] || style['shadow-offset-height'] || style['shadow-spread']) {
+        style.shadow = {
+          offset: [style['shadow-offset-width'], style['shadow-offset-height']],
+          spread: style['shadow-spread'],
+          blur: style['shadow-blur'],
+          color: style['shadow-color']
+        }
+      }
     })
   );
 }
@@ -35,6 +43,7 @@ function render_corner_shape_with_canvas(do_save) {
     for (const side of ["top", "right", "bottom", "left"])
       style[`border-${side}-color`] =
         document.forms.form.elements[`border-${side}-color`].value;
+    style['shadow-color'] = document.forms.form.elements[`shadow-color`].value;
     if (do_save) {
       const asParams = new URLSearchParams(Object.entries(style));
       history.pushState(null, null, "?" + asParams.toString())

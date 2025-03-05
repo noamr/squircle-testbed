@@ -2,7 +2,7 @@ import {
     offset_for_curvature,
     se
 } from "./corner-math.js";
-export function resolve_corner_params(style, width, height) {
+export function resolve_corner_params(style, width, height, outset = null) {
     const params = {
         'top-right': {
             outer: [width - style['border-top-right-radius'][0], 0, width, style['border-top-right-radius'][1]],
@@ -29,6 +29,8 @@ export function resolve_corner_params(style, width, height) {
         outer,
         inset
     }]) => {
+        if (outset !== null)
+            inset = [-outset, -outset];
         const shape = style[`corner-${corner}-shape`];
         const s1 = Math.sign(outer[2] - outer[0]);
         const s2 = Math.sign(outer[3] - outer[1]);
@@ -55,21 +57,21 @@ export function resolve_corner_params(style, width, height) {
 
         const trim = tl_first ? [
             [
-                [0, outer[1] + inner[1]],
-                [width, outer[1] + inner[1]]
+                [0-outset, outer[1] + inner[1]],
+                [width + outset, outer[1] + inner[1]]
             ],
             [
-                [outer[2] + inner[2], 0],
-                [outer[2] + inner[2], height]
+                [outer[2] + inner[2], 0 - outset],
+                [outer[2] + inner[2], height + outset]
             ]
         ] : [
             [
-                [outer[0] + inner[0], 0],
-                [outer[0] + inner[0], width]
+                [outer[0] + inner[0], 0 - outset],
+                [outer[0] + inner[0], width + outset]
             ],
             [
-                [0, outer[3] + inner[3]],
-                [width, outer[3] + inner[3]]
+                [0 - outset, outer[3] + inner[3]],
+                [width + outset, outer[3] + inner[3]]
             ]
         ];
 
@@ -91,11 +93,11 @@ export function resolve_corner_params(style, width, height) {
         const inner_center = superellipse_center(inner_rect, shape);
         return [corner, {
             outer_rect: outer,
-            inner_rect,
-            inset,
             shape,
-            inner_offset: inner,
             outer_center,
+            inset,
+            inner_rect,
+            inner_offset: inner,
             inner_center,
             trim
         }];

@@ -3,7 +3,7 @@
 <script src="scripts/setup.js" type="module"></script>
 <main>
     <section>
-        <canvas id="ref" width=400 height=400></canvas>
+        <canvas id="ref" width=600 height=600></canvas>
     </section>
     <form id=form>
         <fieldset class="top-left">
@@ -33,6 +33,21 @@
         </fieldset>
         <fieldset class="bottom-right">
             Bottom Right
+        </fieldset>
+        <fieldset class="shadow-field">
+            <label>Shadow</label>
+            <label>Offset Width
+                <input type=range name="shadow-offset-width" min="-100" max="100" value="0"
+                    list="shadow-offset-ticks"></label>
+            <label>Offset Height
+                <input type=range name="shadow-offset-height" min="-100" max="100" value="0"
+                    list="shadow-offset-ticks"></label>
+            <label>Spread
+                <input type=range name="shadow-spread" min="0" max="30" value="0"></label>
+            <label>Blur
+                <input type=range name="shadow-blur" min="0" max="30" value="0"></label>
+            <label>Color
+                <input type=color name="shadow-color"></label>
         </fieldset>
     </form>
     <datalist id="se-ticks">
