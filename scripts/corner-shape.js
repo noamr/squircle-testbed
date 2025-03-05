@@ -1,8 +1,8 @@
 import {
-  offset_for_curvature,
   control_points,
-  se
 } from "./corner-math.js";
+import { resolve_corner_params } from "./corner-params.js";
+
 import {
   Bezier
 } from "https://cdn.jsdelivr.net/npm/bezier-js@6.1.4/src/bezier.min.js"
@@ -73,108 +73,13 @@ function add_corner(ctx, ax, ay, bx, by, curvature, l1 = null, l2 = null) {
 }
 
 export function render(style, ctx, width, height) {
-  const params = {
-    'top-right': {
-      outer: [width - style['border-top-right-radius'][0], 0, width, style['border-top-right-radius'][1]],
-      inset: [style['border-top-width'], style['border-right-width']],
-      shape: style['corner-top-right-shape'],
-    },
-
-    'bottom-right': {
-      outer: [width, height - style['border-bottom-right-radius'][1], width - style['border-bottom-right-radius'][0], height],
-      inset: [style['border-right-width'], style['border-bottom-width']],
-      shape: style['corner-bottom-right-shape'],
-    },
-
-    'bottom-left': {
-      outer: [style['border-bottom-left-radius'][0], height, 0, height - style['border-bottom-left-radius'][1]],
-      inset: [style['border-bottom-width'], style['border-left-width']],
-      shape: style['corner-bottom-left-shape'],
-    },
-
-    'top-left': {
-      outer: [0, style['border-top-left-radius'][1], style['border-top-left-radius'][0], 0],
-      inset: [style['border-left-width'], style['border-top-width']],
-      shape: style['corner-top-left-shape'],
-    }
-  };
-
+  const corner_params = resolve_corner_params(style, width, height);
   function draw_outer_corner(corner) {
     const {
-      outer,
+      outer_rect,
       shape
-    } = params[corner];
-    add_corner(ctx, ...outer, shape);
-  }
-
-  function get_corner(corner) {
-    const {outer, inset, shape} = params[corner];
-    const s1 = Math.sign(outer[2] - outer[0]);
-    const s2 = Math.sign(outer[3] - outer[1]);
-    const [sw1, sw2] = inset;
-    const inner = [
-      s1 * sw1, s2 * sw1, -s1 * sw2, -s2 * sw2
-    ];
-
-    const tl_first = Math.sign(inner[0]) === Math.sign(inner[1]);
-
-    const offset = offset_for_curvature(shape);
-    if (tl_first) {
-      const s = offset[1];
-      offset[1] = offset[0];
-      offset[0] = s;
-    }
-
-    const inner_rect = [
-      outer[0] + inner[0] * offset[0],
-      outer[1] + inner[1] * offset[1],
-      outer[2] + inner[2] * offset[1],
-      outer[3] + inner[3] * offset[0],
-    ]
-
-    const trim = tl_first ? [
-      [
-        [0, outer[1] + inner[1]],
-        [width, outer[1] + inner[1]]
-      ],
-      [
-        [outer[2] + inner[2], 0],
-        [outer[2] + inner[2], height]
-      ]
-    ] : [
-      [
-        [outer[0] + inner[0], 0],
-        [outer[0] + inner[0], width]
-      ],
-      [
-        [0, outer[3] + inner[3]],
-        [width, outer[3] + inner[3]]
-      ]
-    ];
-
-    function superellipse_center([x0, y0, x1, y1], k) {
-      if (Math.sign(x1 - x0) !== Math.sign(y1 - y0))
-        k = 1 / k;
-      if (k < 1) {
-        [x0, y0, x1, y1] = [x1, y1, x0, y0];
-        k = 1/k;
-      }
-      const {x, y} = se(k);
-      return [x0 + x * (x1 - x0), y0 + (1 - y) * (y1 - y0)]
-    }
-
-    const outer_center = superellipse_center(outer, shape);
-    const inner_center = superellipse_center(inner_rect, shape);
-    return {
-      outer_rect: outer,
-      inner_rect,
-      inset,
-      shape,
-      inner_offset: inner,
-      outer_center,
-      inner_center,
-      trim
-    }
+    } = corner_params[corner];
+    add_corner(ctx, ...outer_rect, shape);
   }
 
   function draw_inner_corner(corner) {
@@ -182,11 +87,11 @@ export function render(style, ctx, width, height) {
       shape,
       inner_rect,
       trim
-    } = get_corner(corner);
+    } = corner_params[corner];
     add_corner(ctx, ...inner_rect, shape, ...trim);
   }
 
-  ctx.moveTo(...params['top-right'].outer.slice(0, 2));
+  ctx.moveTo(...corner_params['top-right'].outer_rect.slice(0, 2));
 
   draw_outer_corner('top-right');
   draw_outer_corner('bottom-right');
@@ -208,7 +113,7 @@ export function render(style, ctx, width, height) {
       inner_center,
       inset,
       inner_rect
-    } = get_corner("top-left");
+    } = corner_params["top-left"];
     ctx.moveTo(0, 0);
     ctx.lineTo(...outer_center)
     ctx.lineTo(...inner_center)
@@ -222,7 +127,7 @@ export function render(style, ctx, width, height) {
       outer_center,
       inner_center,
       inset,
-    } = get_corner("top-right");
+    } = corner_params["top-right"];
     ctx.lineTo(inner_rect[0], inset[0]);
     ctx.lineTo(inner_rect[0], inner_rect[3]);
     ctx.lineTo(...inner_center)
@@ -245,7 +150,7 @@ export function render(style, ctx, width, height) {
       outer_center,
       inner_center,
       inset,
-    } = get_corner("bottom-right");
+    } = corner_params["bottom-right"];
     ctx.lineTo(width - inset[0], inner_rect[1]);
     ctx.lineTo(inner_rect[2], inner_rect[1]);
     ctx.lineTo(...inner_center)
@@ -270,7 +175,7 @@ export function render(style, ctx, width, height) {
       inner_center,
       inner_rect,
       inset,
-    } = get_corner("bottom-left");
+    } = corner_params["bottom-left"];
     ctx.lineTo(inner_rect[0], height - inset[0]);
     ctx.lineTo(inner_rect[0], inner_rect[3]);
     ctx.lineTo(...inner_center)
@@ -295,7 +200,7 @@ export function render(style, ctx, width, height) {
       inner_center,
       inner_rect,
       inset,
-    } = get_corner("top-left");
+    } = corner_params["top-left"];
     ctx.lineTo(inset[0], inner_rect[1]);
     ctx.lineTo(inner_rect[2], inner_rect[1]);
     ctx.lineTo(...inner_center)
