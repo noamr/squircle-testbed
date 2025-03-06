@@ -2,7 +2,7 @@ import {
     cornerStyleNone,
     cornerStyleRounded,
     cornerStyleSuperellipse,
-    cornerStyleSuperellipseApproximation,
+    cornerStyleBezierSuperellipse,
     cornerStyleContinuousRounded,
     ShapeParameters,
     BorderRenderer,
@@ -25,9 +25,9 @@ const cornerStyles = [
         data: cornerStyleSuperellipse
     },
     {
-        name: 'Superellipse Approximation',
-        value: 'superellipseaprox',
-        data: cornerStyleSuperellipseApproximation
+        name: 'Bezier Superellipse',
+        value: 'beziersuperellipsea',
+        data: cornerStyleBezierSuperellipse
     },
     {
         name: 'Continuous Rounded (Apple)',
