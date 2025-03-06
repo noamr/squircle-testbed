@@ -1,5 +1,5 @@
 import {
-    control_points_for_superellipse
+    control_points
 } from "./corner-math.js";
 
 const cornerTopLeft = 0;
@@ -10,7 +10,7 @@ const cornerBottomLeft = 3;
 export const cornerStyleNone = 'none';
 export const cornerStyleRounded = 'rounded';
 export const cornerStyleSuperellipse = 'superellipse';
-export const cornerStyleSuperellipseApproximation = 'superellipseapprox';
+export const cornerStyleBezierSuperellipse = 'bezierSuperellipse';
 export const cornerStyleContinuousRounded = 'continuous-rounded';
 
 
@@ -204,8 +204,8 @@ export class BorderRenderer {
         case cornerStyleSuperellipse:
             this.#addShapeSuperellipseCorner(shapeSegments, cornerPoint, cornerSize, corner);
             break;
-        case cornerStyleSuperellipseApproximation:
-            this.#addShapeSuperellipseApproxCorner(shapeSegments, cornerPoint, cornerSize, corner);
+        case cornerStyleBezierSuperellipse:
+            this.#addShapeBezierSuperellipseCorner(shapeSegments, cornerPoint, cornerSize, corner);
             break;
         case cornerStyleContinuousRounded:
             this.#addShapeContinuousRoundedCorner(shapeSegments, cornerPoint, cornerSize, corner);
@@ -324,11 +324,10 @@ export class BorderRenderer {
 
             const point = cornerPoint.movedBy(offset);
             shapeSegments.push(new ShapeSegmentLine(Absolute, point));
-
         }
     }
 
-    #addShapeSuperellipseApproxCorner(shapeSegments, cornerPoint, cornerSize, corner)
+    #addShapeBezierSuperellipseCorner(shapeSegments, cornerPoint, cornerSize, corner)
     {
         let cornerScale;
         switch (corner) {
@@ -348,9 +347,9 @@ export class BorderRenderer {
 
         const k = valueToSuperEllipseK(this._parameters.superEllipseK);
         
-        const flatControlPoints = control_points_for_superellipse(k);
+        const flatControlPoints = control_points(k);
         // Undo the flipping.
-        const controlPoints = flatControlPoints.map((v) => { return new Point(v[0], 1 - v[1]); });
+        const controlPoints = flatControlPoints.map((v) => { return new Point(v.x, v.y); });
 
         let destPoint;
         switch (corner) {
@@ -372,26 +371,26 @@ export class BorderRenderer {
         
         const cornerMapScale = cornerSize.scaledBy(cornerScale);
 
-        let midPoint = controlPoints[2];
+        let midPoint = controlPoints[3];
         midPoint = midPoint.scaledBy(cornerSize);
         midPoint = midPoint.scaledBy(cornerScale);
         midPoint = midPoint.addedTo(cornerPoint);
 
-        let fromControlPoint = controlPoints[0];
+        let fromControlPoint = controlPoints[1];
         fromControlPoint = fromControlPoint.scaledBy(cornerMapScale);
         fromControlPoint = fromControlPoint.addedTo(cornerPoint);
 
-        let toControlPoint = controlPoints[1];
+        let toControlPoint = controlPoints[2];
         toControlPoint = toControlPoint.scaledBy(cornerMapScale);
         toControlPoint = toControlPoint.addedTo(cornerPoint);
 
         shapeSegments.push(new ShapeSegmentCurve(Absolute, fromControlPoint, toControlPoint, midPoint));
 
-        fromControlPoint = controlPoints[3];
+        fromControlPoint = controlPoints[4];
         fromControlPoint = fromControlPoint.scaledBy(cornerMapScale);
         fromControlPoint = fromControlPoint.addedTo(cornerPoint);
 
-        toControlPoint = controlPoints[4];
+        toControlPoint = controlPoints[5];
         toControlPoint = toControlPoint.scaledBy(cornerMapScale);
         toControlPoint = toControlPoint.addedTo(cornerPoint);
 
