@@ -77,7 +77,7 @@ export function render(style, ctx, width, height) {
   ctx.scale(0.75, 0.75);
   ctx.translate(60, 60);
 
-  if (!style.shadow) {
+  if (style.shadow) {
     const {
       spread,
       offset,
