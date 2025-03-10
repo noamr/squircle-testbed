@@ -117,6 +117,41 @@ export function render(style, ctx, width, height) {
   ctx.clip("nonzero");
 
   {
+    ctx.fillStyle = style['border-top-color'];
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(style['border-left-width'], style['border-top-width']);
+    ctx.lineTo(width - style['border-right-width'], style['border-top-width']);
+    ctx.lineTo(width, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = style['border-right-color'];
+    ctx.beginPath();
+    ctx.moveTo(width, 0);
+    ctx.lineTo(width - style['border-right-width'], style['border-top-width']);
+    ctx.lineTo(width - style['border-right-width'], height - style['border-bottom-width']);
+    ctx.lineTo(width, height);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = style['border-bottom-color'];
+    ctx.beginPath();
+    ctx.moveTo(width, height);
+    ctx.lineTo(width - style['border-right-width'], height - style['border-bottom-width']);
+    ctx.lineTo(style['border-left-width'], height - style['border-bottom-width']);
+    ctx.lineTo(0, height);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = style['border-left-color'];
+    ctx.beginPath();
+    ctx.lineTo(0, height);
+    ctx.lineTo(style['border-left-width'], height - style['border-bottom-width']);
+    ctx.lineTo(style['border-left-width'], style['border-top-width']);
+    ctx.lineTo(0, 0);
+    ctx.closePath();
+    ctx.fill();
+  }
+  {
+    ctx.fillStyle = style['border-top-color'];
     ctx.beginPath();
     ctx.moveTo(width - style['border-top-right-radius'][0], 0);
     draw_outer_corner('top-right', 'first');
@@ -125,11 +160,12 @@ export function render(style, ctx, width, height) {
     ctx.lineTo(style['border-top-left-radius'][0], style['border-top-width']);
     draw_inner_corner('top-left', 'second', 'reverse');
     draw_outer_corner('top-left', 'second');
-    ctx.fillStyle = style['border-top-color'];
+    ctx.closePath();
     ctx.fill();
   }
 
   {
+    ctx.fillStyle = style['border-right-color'];
     ctx.beginPath();
     draw_inner_corner('top-right', 'second', 'reverse');
     draw_outer_corner('top-right', 'second');
@@ -139,8 +175,7 @@ export function render(style, ctx, width, height) {
     draw_inner_corner('bottom-right', 'first', 'reverse');
     ctx.lineTo(width - style['border-right-width'], height - style['border-bottom-right-radius'][1])
     ctx.lineTo(width - style['border-right-width'], style['border-top-right-radius'][1])
-    ctx.fillStyle = style['border-right-color'];
-    //    ctx.stroke();
+    ctx.closePath();
     ctx.fill();
   } {
     ctx.beginPath();
@@ -162,7 +197,6 @@ export function render(style, ctx, width, height) {
     draw_outer_corner('bottom-left', 'second', 'reverse');
     draw_inner_corner('bottom-left', 'second');
     ctx.lineTo(style['border-left-width'], height - style['border-bottom-left-radius'][1]);
-    ctx.lineTo(style['border-left-width'], style['border-top-left-radius'][1]);
     draw_inner_corner('top-left', 'first');
     draw_outer_corner('top-left', 'first', 'reverse');
     ctx.fillStyle = style['border-left-color'];
