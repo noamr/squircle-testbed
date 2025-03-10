@@ -55,26 +55,6 @@ export function resolve_corner_params(style, width, height, outset = null) {
             outer[3] + inner[3] * offset[0],
         ]
 
-        const trim = tl_first ? [
-            [
-                [0-outset, outer[1] + inner[1]],
-                [width + outset, outer[1] + inner[1]]
-            ],
-            [
-                [outer[2] + inner[2], 0 - outset],
-                [outer[2] + inner[2], height + outset]
-            ]
-        ] : [
-            [
-                [outer[0] + inner[0], 0 - outset],
-                [outer[0] + inner[0], width + outset]
-            ],
-            [
-                [0 - outset, outer[3] + inner[3]],
-                [width + outset, outer[3] + inner[3]]
-            ]
-        ];
-
         function superellipse_center([x0, y0, x1, y1], k) {
             if (Math.sign(x1 - x0) !== Math.sign(y1 - y0))
                 k = 1 / k;
@@ -98,8 +78,7 @@ export function resolve_corner_params(style, width, height, outset = null) {
             inset,
             inner_rect,
             inner_offset: inner,
-            inner_center,
-            trim
+            inner_center
         }];
     }));
 }

@@ -1,13 +1,11 @@
 import {
   control_points,
 } from "./corner-math.js";
-import { resolve_corner_params } from "./corner-params.js";
-
 import {
-  Bezier
-} from "https://cdn.jsdelivr.net/npm/bezier-js@6.1.4/src/bezier.min.js"
+  resolve_corner_params
+} from "./corner-params.js";
 
-function add_corner(ctx, ax, ay, bx, by, curvature, l1 = null, l2 = null) {
+function add_corner(ctx, ax, ay, bx, by, curvature) {
   const vertex = ((bx - ax) * (by - ay) >= 0) ? {
     x: ax,
     y: by
@@ -38,43 +36,17 @@ function add_corner(ctx, ax, ay, bx, by, curvature, l1 = null, l2 = null) {
     return;
   }
   ctx.save();
-  const transform_vals = [hor.x, hor.y, ver.x, ver.y, vertex.x, vertex.y];
-  ctx.transform(...transform_vals);
-  const inverse_transform = new DOMMatrix(transform_vals).inverse();
-  [l1, l2] = [l1, l2].map(p => p ? Object.fromEntries(p.map(
-    (p, i) => [`p${i + 1}`, inverse_transform.transformPoint(new DOMPoint(p[0], p[1]))])) : null);
+  ctx.transform(hor.x, hor.y, ver.x, ver.y, vertex.x, vertex.y);
   const [P0, P1, P2, P3, P4, P5, P6] = control_points(curvature);
-  const b1 = new Bezier(P0, P1, P2, P3);
-  const b2 = new Bezier(P3, P4, P5, P6);
-  let t1 = l1 === null ? 0 : b1.intersects(l1)[0];
-  let t2 = l2 === null ? 1 : b2.intersects(l2)[0];
-  if (curvature < 0.01 || !t2) {
-    t1 = 0;
-    t2 = 1;
-  }
-
-  if (t1 === 0 && t2 === 1) {
-    ctx.lineTo(P0.x, P0.y);
-    ctx.bezierCurveTo(P1.x, P1.y, P2.x, P2.y, P3.x, P3.y);
-    ctx.bezierCurveTo(P4.x, P4.y, P5.x, P5.y, P6.x, P6.y);
-  } else {
-    const first = b1.split(t1).right.points.flatMap(({
-      x,
-      y
-    }) => [x, y]);
-    const second = b2.split(t2).left.points.flatMap(({
-      x,
-      y
-    }) => [x, y]);
-    ctx.lineTo(first[0], first[1]);
-    ctx.bezierCurveTo(...first.slice(2));
-    ctx.bezierCurveTo(...second.slice(2));
-  }
+  ctx.lineTo(P0.x, P0.y);
+  ctx.bezierCurveTo(P1.x, P1.y, P2.x, P2.y, P3.x, P3.y);
+  ctx.bezierCurveTo(P4.x, P4.y, P5.x, P5.y, P6.x, P6.y);
   ctx.restore();
 }
 
 export function render(style, ctx, width, height) {
   const corner_params = resolve_corner_params(style, width, height);
+
   function draw_outer_corner(corner) {
     const {
       outer_rect,
@@ -88,7 +60,7 @@ export function render(style, ctx, width, height) {
   ctx.translate(60, 60);
 
   function draw_inner_corner_from_params(params) {
-    add_corner(ctx, ...params.inner_rect, params.shape, ...params.trim);
+    add_corner(ctx, ...params.inner_rect, params.shape);
   }
 
   function draw_inner_corner(corner) {
@@ -96,7 +68,12 @@ export function render(style, ctx, width, height) {
   }
 
   if (style.shadow) {
-    const {spread, offset, blur, color} = style.shadow;
+    const {
+      spread,
+      offset,
+      blur,
+      color
+    } = style.shadow;
     const for_shadow = resolve_corner_params(style, width, height, spread);
     ctx.save();
     ctx.filter = `blur(${blur}px)`;
@@ -113,7 +90,7 @@ export function render(style, ctx, width, height) {
     ctx.lineTo(-spread, for_shadow['bottom-left'].inner_rect[3]);
     ctx.lineTo(-spread, for_shadow['top-left'].inner_rect[1]);
     draw_inner_corner_from_params(for_shadow['top-left']);
-    ctx.lineTo(for_shadow['top-left'].inner_rect[2  ], -spread);
+    ctx.lineTo(for_shadow['top-left'].inner_rect[2], -spread);
     ctx.fillStyle = color;
     ctx.fill("evenodd");
     ctx.closePath();
@@ -121,21 +98,14 @@ export function render(style, ctx, width, height) {
   }
 
   ctx.beginPath();
-  ctx.moveTo(...corner_params['top-right'].outer_rect.slice(0, 2));
 
+  ctx.moveTo(width - style['border-top-right-radius'][0], 0);
   draw_outer_corner('top-right');
   draw_outer_corner('bottom-right');
   draw_outer_corner('bottom-left');
   draw_outer_corner('top-left');
-  ctx.moveTo(width / 2, style['border-top-width']);
-  draw_inner_corner('top-right');
-  draw_inner_corner('bottom-right');
-  draw_inner_corner('bottom-left');
-  draw_inner_corner('top-left');
+  ctx.clip("nonzero");
 
-  ctx.save();
-  ctx.closePath();
-  ctx.clip("evenodd");
   ctx.beginPath();
 
   {
@@ -243,13 +213,39 @@ export function render(style, ctx, width, height) {
   }
 
   ctx.restore();
+
+  const inner_rect = [style['border-left-width'], style['border-top-width'], width - style['border-right-width'], height - style['border-bottom-width']];
+  ctx.save();
   ctx.beginPath();
-  ctx.moveTo(width / 2, style['border-top-width']);
   draw_inner_corner('top-right');
+  ctx.lineTo(inner_rect[2], inner_rect[3]);
+  ctx.lineTo(inner_rect[0], inner_rect[3]);
+  ctx.lineTo(inner_rect[0], inner_rect[1]);
+  ctx.closePath();
+  ctx.clip();
+  ctx.beginPath();
   draw_inner_corner('bottom-right');
+  ctx.lineTo(inner_rect[0], inner_rect[3]);
+  ctx.lineTo(inner_rect[0], inner_rect[1]);
+  ctx.lineTo(inner_rect[2], inner_rect[1]);
+  ctx.closePath();
+  ctx.clip();
+  ctx.beginPath();
   draw_inner_corner('bottom-left');
+  ctx.lineTo(inner_rect[0], inner_rect[1]);
+  ctx.lineTo(inner_rect[2], inner_rect[1]);
+  ctx.lineTo(inner_rect[2], inner_rect[3]);
+  ctx.closePath();
+  ctx.clip();
+  ctx.beginPath();
   draw_inner_corner('top-left');
-  ctx.fillStyle = "rgba(255, 255, 255, 1)";
-  ctx.fill("nonzero");
+  ctx.lineTo(inner_rect[2], inner_rect[1]);
+  ctx.lineTo(inner_rect[2], inner_rect[3]);
+  ctx.lineTo(inner_rect[0], inner_rect[3]);
+  ctx.closePath();
+  ctx.clip();
+  ctx.fillStyle = "white";
+  ctx.fill();
+  ctx.restore();
 
 }
