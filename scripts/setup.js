@@ -1,5 +1,4 @@
 import {render} from "./corner-shape.js";
-import { resolve_corner_params } from "./corner-params.js";
 function fix_style(style, w, h) {
   ["top", "bottom"].forEach((vSide) =>
     ["left", "right"].forEach((hSide) => {
@@ -57,9 +56,14 @@ function render_corner_shape_with_canvas(do_save) {
       "bottom-right",
       "bottom-left"
     ]) {
-      const v = style[`corner-${corner}-shape`];
-      const k =
+      let v = style[`corner-${corner}-shape`];
+      let flip = v < 50;
+      if (flip)
+        v = 100 -v;
+      let k =
         v === 0 ? 0 : v === 100 ? 1000 : Math.log(0.5) / Math.log(v / 100);
+      if (flip)
+        k = 1 / k;
       style[`corner-${corner}-shape`] = `superellipse(${k})`;
       style[`border-${corner}-radius`] = `${style[`border-${corner}-radius`]}%`;
     }
