@@ -35,7 +35,7 @@
             Bottom Right
         </fieldset>
         <fieldset class="shadow-field">
-            <label>Shadow</label>
+            <h4>Shadow</h4>
             <label>Offset Width
                 <input type=range name="shadow-offset-width" min="-100" max="100" value="0"
                     list="shadow-offset-ticks"></label>
@@ -48,6 +48,14 @@
                 <input type=range name="shadow-blur" min="0" max="30" value="0"></label>
             <label>Color
                 <input type=color name="shadow-color"></label>
+
+            <h4>Settings</h4>
+            <label>Mode:
+                <select name="mode">
+                    <option value="fast">Fast (bezier curve approximation)</option>
+                    <option value="precise">Precise (pixel-by-pixel superellipse)</option>
+                </select>
+            </label>
         </fieldset>
     </form>
     <datalist id="se-ticks">

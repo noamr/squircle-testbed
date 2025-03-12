@@ -43,6 +43,7 @@ function render_corner_shape_with_canvas(do_save) {
       style[`border-${side}-color`] =
         document.forms.form.elements[`border-${side}-color`].value;
     style['shadow-color'] = document.forms.form.elements[`shadow-color`].value;
+    style['mode'] = document.forms.form.elements['mode'].value;
     if (do_save) {
       const asParams = new URLSearchParams(Object.entries(style));
       history.pushState(null, null, "?" + asParams.toString())
