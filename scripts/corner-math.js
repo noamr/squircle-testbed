@@ -86,3 +86,15 @@ export function control_points(curvature) {
 
   return [P0, P1, P2, P3, P4, P5, P6];
 }
+
+export function superellipse_t_for_x(x, curvature) {
+  if (curvature < 1) {
+    return 1 - superellipse_t_for_y(1 - x, 1 / curvature);
+  } else return Math.log(x) / Math.log(1 / curvature);
+}
+
+export function superellipse_t_for_y(y, curvature) {
+  if (curvature < 1) {
+    return 1 - superellipse_t_for_x(1 - y, 1 / curvature);
+  } else return 1 - Math.log(y) / Math.log(1 / curvature);
+}
