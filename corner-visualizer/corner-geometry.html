@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Corner visualizer</title>
+    <title>Corner Geometry</title>
     <style>
         :root {
             font-family: system-ui, san-serif;
@@ -71,10 +71,14 @@
             grid-column: 2;
         }
         
+        .labeled-control.corner {
+            padding: 4px;
+        }
+        
         .control-group {
             grid-column: 1 / 3;
             display: grid;
-            grid-template-columns: 200px 1fr;
+            grid-template-columns: 50px 1fr;
             border: 1px solid #ddd;
             padding: 20px;
         }
@@ -111,7 +115,7 @@
     <script src="../custom-elements/value-slider.js"></script>
     <script src="../custom-elements/popup.js"></script>
 
-    <script src="bezier-intersection.js" type="module"></script>
+    <script src="corner-geometry.js" type="module"></script>
 </head>
 <body>
     <main>
@@ -122,16 +126,26 @@
         <section class="controls">
             <div class="container">
                 <div class="control-group">
-
                     <div class="labeled-control">
-                        <label class="radius-label">X offset</label><value-slider class="slider" id="border-left-width-slider" min="0" max="1" step="0.005" value=0.1></value-slider>
+                        <label class="radius-label">Left width</label><value-slider class="slider" id="border-left-width-slider" min="0" max="1" step="0.005" value=0.15></value-slider>
                     </div>
                     <div class="labeled-control">
-                        <label class="radius-label">Y offset</label><value-slider class="slider" id="border-top-width-slider" min="0" max="1" step="0.005" value=0.1></value-slider>
+                        <label class="radius-label">Top width</label><value-slider class="slider" id="border-top-width-slider" min="0" max="1" step="0.005" value=0.15></value-slider>
                     </div>
 
                     <div class="labeled-control">
-                        <label class="s-label">S</label><value-slider class="slider" id="s-slider" min="-15" max="15" step="0.01" value="1"></value-slider>
+                        <label class="radius-label">Left Radius</label><value-slider class="slider" id="border-left-radius-slider" min="0" max="1" step="0.005" value=0.5></value-slider>
+                    </div>
+                    <div class="labeled-control">
+                        <label class="radius-label">Top Radius</label><value-slider class="slider" id="border-top-radius-slider" min="0" max="1" step="0.005" value=0.5></value-slider>
+                    </div>
+
+                    <div class="labeled-control">
+                        <label class="s-label">S</label><value-slider class="slider" id="s-slider" min="-15" max="15" step="0.01" value="-0.25"></value-slider>
+                    </div>
+
+                    <div class="corner labeled-control">
+                         <label class="s-label">Corner:</label><custom-popup id="corner-select"></custom-popup>
                     </div>
 
                     <div class="labeled-control">
@@ -139,27 +153,13 @@
                             <input id="show-control-points" type="checkbox" checked><label for="show-control-points">Show control points</label>
                         </div>
                         <div class="checkbox">
-                            <input id="show-classic-se" type="checkbox"><label for="show-classic-se">Show <span style="color: red">classic superellipse</span></label>
-                        </div>
-                        <div class="checkbox">
-                            <input id="show-math-se" type="checkbox"><label for="show-math-se">Show <span style="color: purple">t-interpolated superellipse</span></label>
-                        </div>
-                        <div class="checkbox">
-                            <input id="show-bezier-se" type="checkbox" checked><label for="show-bezier-se">Show <span style="color: gray">bezier superellipse<span></label>
+                            <input id="show-corner-details" type="checkbox" checked><label for="show-corner-details">Show corner details<span></label>
                         </div>
                     </div>
                 </div>
-
             </div>
         </section>
         <section class="explanation">
-            <p>This view compares rendering of the classic superellipse (<code>x^k + y^k = 1</code>) in green, with a rendering based on <code>t</code> interpolation (purple) and a derived bezier curve (gray, with control points.)</p>
-            
-            <p>The slider controls the curvature param <code>s</code>, which is mapped to <code>k</code> via <code>k = Math.pow(2, s)</code>.
-
-            <p>For symmetry around <code>s=0</code>, the <code>t</code> interpolation and bezier curves use <code>abs(s)</code> mapped into the negative s region, hence the deviation from the green line.</p>
-
-            <p>The red point demonstrates the math to compute Y given X.</p>
         </section>
     </main>
 

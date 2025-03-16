@@ -35,7 +35,7 @@ class Point {
     
     toString()
     {
-        return `x: ${this.x}, y: ${this.y}`;
+        return `x: ${this.x.toFixed(3)}, y: ${this.y.toFixed(3)}`;
     }
 }
 
@@ -50,6 +50,32 @@ class Size {
     scaledBy(scale)
     {
         return new Size(this.width * scale.width, this.height * scale.height);
+    }
+
+    addedTo(size)
+    {
+        return new Size(this.width + size.width, this.height + size.height);
+    }
+    
+    flipped()
+    {
+        return new Size(this.height, this.width);
+    }
+
+    clone()
+    {
+        return new Size(this.width, this.height);
+    }
+    
+    normalized()
+    {
+        const hypot = Math.hypot(this.width, this.height);
+        return new Size(this.width / hypot, this.height / hypot);
+    }
+
+    toString()
+    {
+        return `x: ${this.width.toFixed(5)}, y: ${this.height.toFixed(5)}`;
     }
 }
 
