@@ -1,14 +1,20 @@
 import {
     CornerMath,
+    CornerCurve,
+    CornerUtils,
+    cornerTopLeft,
+    cornerTopRight,
+    cornerBottomRight,
+    cornerBottomLeft,    
 } from "./improved-corner-math.js";
-
 
 class Parameters {
     constructor()
     {
         // These are percentages.
         this.borderRadius = new Size(20, 20);
-        this.borderWidth = 0.2;
+        this.borderLeftWidth = 0.2;
+        this.borderTopWidth = 0.2;
 
         this.superEllipseS = 1;
 
@@ -49,7 +55,7 @@ class GraphRenderer {
             this.renderingHeight - 2 * this.boxMargin
         );
 
-        const graphScale = new Size(boxSize.width, -boxSize.height);
+        const graphScale = new Size(boxSize.width, boxSize.height);
         
         context.save();
         context.translate(boxLeft, boxTop);
@@ -57,28 +63,18 @@ class GraphRenderer {
         context.lineWidth = 4;
         context.strokeStyle = 'gray';
         
-        // Y axis
+        // Box edge
         context.beginPath();
-        context.moveTo(0, 0);
-        context.lineTo(0, boxSize.height);
-        
-        // X axis
-        context.lineTo(boxSize.width, boxSize.height);
+        context.moveTo(0, boxSize.height);
+        context.lineTo(0, 0);
+        context.lineTo(boxSize.width, 0);
         context.stroke();
-        
-        const textLeft = -(boxLeft - 20);
-        context.font = '32pt sans-serif';
-        context.fillText('1', textLeft, 0);
-        context.fillText('0', textLeft, boxSize.height);
 
         const s = this._parameters.superEllipseS;
         const k = CornerMath.sToK(s);
 
-        console.log(`param s ${this._parameters.superEllipseS} k ${k.toFixed(3)}`);
-        
         const pointToGraph = (p) => {
-            const offset = p.scaledBy(graphScale);
-            return offset.movedBy(new Size(0, boxSize.height));
+            return p.scaledBy(graphScale);
         };
 
         const startPoint = pointToGraph(new Point(0, 1));
@@ -97,7 +93,7 @@ class GraphRenderer {
                 const t = i / (steps - 1);
 
                 const p = CornerMath.superellipsePointAtProgress(s, t);
-                const graphPoint = pointToGraph(p);
+                const graphPoint = pointToGraph(new Point(1 - p.y, 1 - p.x)); // Map to top left.
                 context.lineTo(graphPoint.x, graphPoint.y);
             }
 
@@ -117,7 +113,7 @@ class GraphRenderer {
             for (let x = 0; x < boxSize.width; ++x) {
                 const fraction = x / boxSize.width;
                 const result = CornerMath.superellipseAtX(fraction, k);
-                const point = new Point(fraction, result);
+                const point = new Point(1 - result, 1 - fraction); // Mapping to top left.
                 const graphPoint = pointToGraph(point);
                 context.lineTo(graphPoint.x, graphPoint.y);
             }
@@ -125,79 +121,115 @@ class GraphRenderer {
             context.lineTo(endPoint.x, endPoint.y);
 
             context.lineWidth = 2;
-            context.strokeStyle = 'green';
+            context.strokeStyle = 'red';
             context.stroke();
             
             context.restore();
         }
 
-        if (this._parameters.showBezierSE) {
-            const controlPoints = CornerMath.controlPointsForSuperellipse(s);
-            const graphPoints = controlPoints.map((p) => pointToGraph(p));
+        function showDot(p, color)
+        {
+            const dotRadius = 10;
 
-            function showDot(p, color)
-            {
-                const dotRadius = 10;
+            context.fillStyle = color;
+            context.beginPath();
+            context.arc(p.x, p.y, dotRadius, 0, 2 * Math.PI);
+            context.fill();
+        }
 
-                context.fillStyle = color;
-                context.beginPath();
-                context.arc(p.x, p.y, dotRadius, 0, 2 * Math.PI);
-                context.fill();
-            }
-
-            function showControlPoint(anchorPoint, controlPoint, color)
-            {
-                const dotRadius = 10;
-
-                context.beginPath();
-                context.moveTo(anchorPoint.x, anchorPoint.y);
-                context.lineTo(controlPoint.x, controlPoint.y);
-                context.strokeStyle = 'rgba(0, 0, 0, 0.25)'
-                context.lineWidth = 1;
-                context.stroke();
-
-                context.beginPath();
-                context.arc(controlPoint.x, controlPoint.y, dotRadius, 0, 2 * Math.PI);
-                context.fillStyle = `rgb(from ${color} r g b / 50%)`;
-                context.fill();
-            }
-
-            showControlPoint(startPoint, graphPoints[0], 'green')
-            showControlPoint(graphPoints[2], graphPoints[1], 'blue')
-            showDot(graphPoints[2], 'orange')
-            showControlPoint(graphPoints[2], graphPoints[3], 'pink')
-            showControlPoint(endPoint, graphPoints[4], 'yellow')
+        function showControlPoint(anchorPoint, controlPoint, color)
+        {
+            const dotRadius = 10;
 
             context.beginPath();
-            context.moveTo(startPoint.x, startPoint.y);
+            context.moveTo(anchorPoint.x, anchorPoint.y);
+            context.lineTo(controlPoint.x, controlPoint.y);
+            context.strokeStyle = 'rgba(0, 0, 0, 0.25)'
+            context.lineWidth = 1;
+            context.stroke();
+
+            context.beginPath();
+            context.arc(controlPoint.x, controlPoint.y, dotRadius, 0, 2 * Math.PI);
+            context.fillStyle = `rgb(from ${color} r g b / 50%)`;
+            context.fill();
+        }
+
+        const cornerCurve = CornerCurve.canonicalCurveForCorner(s, new Size(1, 1));
+
+        if (this._parameters.showBezierSE) {
+            const mappedPoints = cornerCurve.points.map((p) => pointToGraph(p));
+
+            // showControlPoint(mappedPoints[0], mappedPoints[1], 'green')
+            // showControlPoint(mappedPoints[3], mappedPoints[2], 'blue')
+            showDot(mappedPoints[3], 'orange')
+            // showControlPoint(mappedPoints[3], mappedPoints[4], 'pink')
+            // showControlPoint(mappedPoints[6], mappedPoints[5], 'yellow')
+
+            context.beginPath();
+            context.moveTo(mappedPoints[0].x, mappedPoints[0].y);
             
-            context.bezierCurveTo(graphPoints[0].x, graphPoints[0].y, graphPoints[1].x, graphPoints[1].y, graphPoints[2].x, graphPoints[2].y);
-            context.bezierCurveTo(graphPoints[3].x, graphPoints[3].y, graphPoints[4].x, graphPoints[4].y, endPoint.x, endPoint.y);
+            context.bezierCurveTo(mappedPoints[1].x, mappedPoints[1].y, mappedPoints[2].x, mappedPoints[2].y, mappedPoints[3].x, mappedPoints[3].y);
+            context.bezierCurveTo(mappedPoints[4].x, mappedPoints[4].y, mappedPoints[5].x, mappedPoints[5].y, mappedPoints[6].x, mappedPoints[6].y);
 
             context.lineWidth = 2;
             context.strokeStyle = 'silver';
             context.stroke();
         }
         
-        {
-            // intersection line
+        if (this._parameters.showBezierSE) {
+            // Run the splitting logic in top right coordinates.
+            const splitCurve = cornerCurve.cornerCurveTruncatingAtXAndY(this._parameters.borderLeftWidth, this._parameters.borderTopWidth);
+            const mappedPoints = splitCurve.points.map((p) => pointToGraph(p));
+            
+            if (mappedPoints.length === 0) {
+                context.beginPath();
+            } else if (mappedPoints.length === 4) {
+                // One segment.
+                if (this._parameters.showControlPoints) {
+                    showControlPoint(mappedPoints[0], mappedPoints[1], 'gray')
+                    showControlPoint(mappedPoints[3], mappedPoints[2], 'gray')
+                }
 
+                context.beginPath();
+                context.moveTo(mappedPoints[0].x, mappedPoints[0].y);
+                context.bezierCurveTo(mappedPoints[1].x, mappedPoints[1].y, mappedPoints[2].x, mappedPoints[2].y, mappedPoints[3].x, mappedPoints[3].y);
+            } else {
+                // Two segments.
+
+                if (this._parameters.showControlPoints) {
+                    showControlPoint(mappedPoints[0], mappedPoints[1], 'gray')
+                    showControlPoint(mappedPoints[3], mappedPoints[2], 'gray')
+                    showDot(mappedPoints[3], 'orange')
+                    showControlPoint(mappedPoints[3], mappedPoints[4], 'gray')
+                    showControlPoint(mappedPoints[6], mappedPoints[5], 'gray')
+                }
+
+                context.beginPath();
+                context.moveTo(mappedPoints[0].x, mappedPoints[0].y);
+            
+                context.bezierCurveTo(mappedPoints[1].x, mappedPoints[1].y, mappedPoints[2].x, mappedPoints[2].y, mappedPoints[3].x, mappedPoints[3].y);
+                context.bezierCurveTo(mappedPoints[4].x, mappedPoints[4].y, mappedPoints[5].x, mappedPoints[5].y, mappedPoints[6].x, mappedPoints[6].y);
+            }
+
+            context.lineWidth = 4;
+            context.strokeStyle = 'rgba(0, 128, 0, 0.75)';
+            context.stroke();
+        }
+        
+        {
+            // Border lines.
             context.beginPath();
-            const xOffset = boxSize.width * this._parameters.borderWidth; 
+            const xOffset = boxSize.width * this._parameters.borderLeftWidth;
             context.moveTo(xOffset, 0);
             context.lineTo(xOffset, boxSize.height);
+
+            const yOffset = boxSize.height * this._parameters.borderTopWidth; 
+            context.moveTo(0, yOffset);
+            context.lineTo(boxSize.width, yOffset);
 
             context.lineWidth = 2;
             context.strokeStyle = 'blue';
             context.stroke();
-            
-            const yPos = CornerMath.superellipseAtXForS(this._parameters.borderWidth, s);
-            const dotPosition = pointToGraph(new Point(this._parameters.borderWidth, yPos));
-
-            context.fillStyle = 'red';
-            context.beginPath();
-            context.arc(dotPosition.x, dotPosition.y, 10, 0, 2 * Math.PI);
-            context.fill();
         }
         
         context.restore();
@@ -235,18 +267,18 @@ class WindowController {
 
     #connectControls()
     {
-        this.kSlider = document.getElementById('s-slider');
-        this.kSlider.oninput = (event) => {
-            this.#sValueChanged(event.target.value);
-        }
-        this.parameters.superEllipseS = parseFloat(this.kSlider.value);
+        const setupSlider = (sliderID, paramName) => {
+            const slider = document.getElementById(sliderID);
+            slider.oninput = (event) => {
+                this.parameters[paramName] = parseFloat(slider.value);
+                this.#parametersChanged();
+            }
+            this.parameters[paramName] = parseFloat(slider.value);
+        };
 
-        this.widthSlider = document.getElementById('border-left-width-slider');
-        this.widthSlider.oninput = (event) => {
-            this.#widthChanged(parseFloat(event.target.value));
-        }
-
-        this.parameters.borderWidth = parseFloat(this.widthSlider.value);
+        setupSlider('s-slider', 'superEllipseS');
+        setupSlider('border-left-width-slider', 'borderLeftWidth');
+        setupSlider('border-top-width-slider', 'borderTopWidth');
         
         const setupCheckbox = (checkboxID, paramName) => {
             const checkbox = document.getElementById(checkboxID);
@@ -263,18 +295,6 @@ class WindowController {
         setupCheckbox('show-math-se', 'showMathSE');
         setupCheckbox('show-bezier-se', 'showBezierSE');
 
-        this.#parametersChanged();
-    }
-
-    #sValueChanged(newValue)
-    {
-        this.parameters.superEllipseS = parseFloat(newValue);
-        this.#parametersChanged();
-    }
-
-    #widthChanged(newWidth)
-    {
-        this.parameters.borderWidth = parseFloat(newWidth);
         this.#parametersChanged();
     }
 

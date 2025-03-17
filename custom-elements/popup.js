@@ -14,7 +14,8 @@ class PopupElement extends HTMLElement {
         const style = document.createElement("style");
         style.innerHTML = `
             select {
-                font-size: 12px;
+                margin: 10px;
+                font-size: 16px;
             }
         `;
         this.shadowRoot.appendChild(style);
