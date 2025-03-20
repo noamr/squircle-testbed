@@ -1,3 +1,25 @@
+/**
+ *
+ * @param {number} curvature
+ * @returns number
+ */
+export function offset_for_curvature(curvature) {
+  // Find the superellipse's control point.
+  // we do that by approximating the superellipse as a quadratic
+  // curve that has the same point at t = 0.5.
+  if (curvature <= 0.001)
+    return [1, -1];
+  const {
+    x
+  } = se(curvature);
+  const [a, b] = [x, 1 - x].map(m => 2 * m - 0.5);
+  const magnitude = Math.hypot(a, b);
+  // Normalize a & b
+  const norm_a = a / magnitude;
+  const norm_b = b / magnitude;
+  return [norm_a, -norm_b];
+}
+
 export function se(n, t = 0.5) {
   const x = Math.pow(t, 1 / n);
   const y = Math.pow(1 - t, 1 / n);

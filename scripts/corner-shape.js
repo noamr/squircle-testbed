@@ -22,6 +22,7 @@ let mode = "fast";
  * @returns
  */
 function add_corner(ctx, ax, ay, bx, by, curvature, phase, direction) {
+
   if (curvature > 1000) {
     ctx.lineTo(ax, ay);
     ctx.lineTo(i_vertex.x, i_vertex.y);
@@ -57,8 +58,9 @@ function add_corner(ctx, ax, ay, bx, by, curvature, phase, direction) {
 
     ctx.lineTo(ax, ay);
     const t_values = new Set();
+    const antialiasing_offset = 0.25;
     for (
-      let x = Math.min(ax, bx); x < Math.max(ax, bx);
+      let x = Math.min(ax, bx) + antialiasing_offset; x < Math.max(ax, bx);
       ++x
     ) {
       const nx = (x - ax) / (bx - ax);
@@ -69,7 +71,7 @@ function add_corner(ctx, ax, ay, bx, by, curvature, phase, direction) {
     }
 
     for (
-      let y = Math.min(ay, by); y < Math.max(ay, by);
+      let y = Math.min(ay, by) + antialiasing_offset; y < Math.max(ay, by);
       ++y
     ) {
       const ny = (y - ay) / (by - ay);
@@ -118,7 +120,7 @@ export function render(style, ctx, width, height) {
   }
 
   function draw_inner_corner_from_params(params, phase = "both", direction) {
-    add_corner(ctx, ...params.inner_rect, params.inner_shape, phase, direction);
+    add_corner(ctx, ...params.inner_rect, params.shape, phase, direction);
   }
 
   function draw_inner_corner(corner, phase = "both", direction) {
@@ -136,7 +138,7 @@ export function render(style, ctx, width, height) {
       blur,
       color
     } = style.shadow;
-    const for_shadow = resolve_corner_params(style, width, height,spread);
+    const for_shadow = resolve_corner_params(style, width, height, spread);
     ctx.save();
     ctx.filter = `blur(${blur}px)`;
     ctx.beginPath();
