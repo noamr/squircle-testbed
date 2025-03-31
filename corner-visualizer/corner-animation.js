@@ -101,7 +101,6 @@ class GraphRenderer {
         
         return this.#sForFraction(intervalFraction);
     }
-
     #sForFraction(fraction)
     {
         const fractionToS = (fraction) => {
@@ -278,6 +277,9 @@ class GraphRenderer {
 
         const s = this._parameters.superEllipseS;
         const k = CornerMath.sToK(s);
+
+        document.querySelector("output.as-log2k").innerText = Number(s).toFixed(2);
+        document.querySelector("output.as-k").innerText = Number(k).toFixed(2);
 
         const cornerCurve = CornerCurve.canonicalCurveForCorner(s, radiusSize);
 
