@@ -79,7 +79,7 @@ export class CornerMath {
             return Math.pow(t, 1 / curvature)
         }
         
-        const curvature = Math.pow(2, s);
+        const curvature = this.sToK(s);
         const x = superellipseAtProgress(curvature, t);
         const y = superellipseAtProgress(curvature, 1 - t);
         
@@ -95,7 +95,28 @@ export class CornerMath {
     {
         return Math.log2(k);
     }
-    
+
+    // We arbitrarily decide that fraction 0 is "square", fraction 1 is "notch".
+    static sForFraction(fraction)
+    {
+        if (fraction === 0)
+            return -Infinity;
+        
+        if (fraction === 1)
+            return Infinity;
+
+        // See https://github.com/w3c/csswg-drafts/issues/11608
+        
+        if (fraction < 0.5) {
+            fraction = 1 - fraction;
+            const k = Math.log(0.5) / Math.log(fraction);
+            return -this.kToS(k);
+        }
+
+        const k = Math.log(0.5) / Math.log(fraction);
+        return this.kToS(k);
+    }
+
     static offsetForCurvature(s)
     {
       // Find the superellipse's control point.
