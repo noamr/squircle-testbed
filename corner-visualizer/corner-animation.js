@@ -68,7 +68,7 @@ class GraphRenderer {
     set parameters(params)
     {
         this._parameters = params;
-        this._parameters.superEllipseS = this.#sForFraction(this._parameters.animationFraction);
+        this._parameters.superEllipseS = CornerMath.sForFraction(this._parameters.animationFraction);
 
         requestAnimationFrame(() => {
             this._animationStartTime = performance.now();
@@ -99,30 +99,7 @@ class GraphRenderer {
         if (intervalIntervalCount % 2)
             intervalFraction = 1 - intervalFraction;
         
-        return this.#sForFraction(intervalFraction);
-    }
-    #sForFraction(fraction)
-    {
-        const fractionToS = (fraction) => {
-            if (fraction === 0)
-                return -Infinity;
-            
-            if (fraction === 1)
-                return Infinity;
-
-            // See https://github.com/w3c/csswg-drafts/issues/11608
-            const log2 = Math.log(2);
-            return (Math.log(- 1 / Math.log(fraction)) + Math.log(log2)) / log2;
-        }
-
-        let s;
-        if (fraction < 0.5)
-            s = -fractionToS(1 - fraction);
-        else
-            s = fractionToS(fraction);
-        
-        console.log(`fraction ${fraction.toFixed(3)} s ${s.toFixed(3)}`);
-        return s;
+        return CornerMath.sForFraction(intervalFraction);
     }
     
     draw()
