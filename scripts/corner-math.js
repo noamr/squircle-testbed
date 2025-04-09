@@ -9,15 +9,9 @@ export function offset_for_curvature(curvature) {
   // curve that has the same point at t = 0.5.
   if (curvature <= 0.001)
     return [1, -1];
-  const {
-    x
-  } = se(curvature);
-  const [a, b] = [x, 1 - x].map(m => 2 * m - 0.5);
-  const magnitude = Math.hypot(a, b);
-  // Normalize a & b
-  const norm_a = a / magnitude;
-  const norm_b = b / magnitude;
-  return [norm_a, -norm_b];
+  const s = Math.min(1, Math.max(-1, Math.log2(curvature)));
+  const rotation = (1 - s) * Math.PI / 4;
+  return [Math.cos(rotation), -Math.sin(rotation)]
 }
 
 export function se(n, t = 0.5) {
