@@ -1,3 +1,13 @@
+
+export function se(n, t = 0.5) {
+  const x = Math.pow(t, 1 / n);
+  const y = Math.pow(1 - t, 1 / n);
+  return {
+    x,
+    y
+  };
+}
+
 /**
  *
  * @param {number} curvature
@@ -9,19 +19,14 @@ export function offset_for_curvature(curvature) {
   // curve that has the same point at t = 0.5.
   if (curvature <= 0.001)
     return [1, -1];
-  const s = Math.min(1, Math.max(-1, Math.log2(curvature)));
-  const rotation = (1 - s) * Math.PI / 4;
-  return [Math.cos(rotation), -Math.sin(rotation)]
+  const {x} = se(curvature);
+  // Chosen so that with s=1 (k = 2) this returns { 1, 0 } which is necessary to match historical `corner-shape: round` behavior.
+  const offset = 2 - Math.sqrt(2);
+  const [a, b] = [x, 1 - x].map(m => Math.max(0, 2 * m - offset));
+  const length = Math.hypot(a, b);
+  return [a, -b].map(m => m / length);
 }
 
-export function se(n, t = 0.5) {
-  const x = Math.pow(t, 1 / n);
-  const y = Math.pow(1 - t, 1 / n);
-  return {
-    x,
-    y
-  };
-}
 
 const p = [
   1.2430920942724248,

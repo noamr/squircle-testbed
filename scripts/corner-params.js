@@ -39,6 +39,7 @@ export function resolve_corner_params(style, width, height, outset = null) {
             s1 * sw1, s2 * sw1, -s1 * sw2, -s2 * sw2
         ];
 
+
         const offset = offset_for_curvature(shape);
         if (Math.sign(inner_offset[0]) === Math.sign(inner_offset[1])) {
             offset.reverse();
