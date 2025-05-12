@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<meta charset="utf8">
+
+<style>
+    .thing {
+        width: 400px;
+        height: 400px;
+    }
+
+    .ref {
+        background: purple;
+    }
+
+    .target {
+        background: green;
+    }
+
+    main {
+        display: flex;
+        gap: 20px;
+        margin: 20px;
+    }
+
+    form {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .grid {
+        display: grid;
+    }
+
+    .grid>* {
+        grid-area: 1/1/2/2;
+    }
+</style>
+<h1>Constrain diagonal radii</h1>
+<main>
+    <div class="grid">
+        <div class="ref thing"></div>
+        <canvas id="canvas" width="400" height="400"></canvas>
+    </div>
+    <div class="target thing"></div>
+    <form name="form">
+        <label>Top-left Horizontal: <input type=range min=0 max=100 name=tlh></label>
+        <label>Top-left Vertical: <input type=range min=0 max=100 name=tlv></label>
+        <label>Top-left shape: <input type=range min=-10 max=0 value=-1 name=tls step="0.1"></label>
+        <label>Bottom-right Horizontal: <input type=range min=0 max=100 name=brh></label>
+        <label>Bottom-right Vertical: <input type=range min=0 max=100 name=brv></label>
+        <label>Bottom-right shape: <input type=range min=-10 value=-1 max=0 name=brs step="0.1"></label>
+    </form>
+</main>
+<script>
+/**
+ * Represents a 2D point.
+ * @typedef {Object} Point
+ * @property {number} x - The x-coordinate.
+ * @property {number} y - The y-coordinate.
+ */
+
+/**
+ * Represents a quadrilateral defined by four points in order (e.g., top-left, top-right, bottom-right, bottom-left).
+ * @typedef {Point[]} Quad - An array of four Point objects.
+ */
+
+ const EPSILON = 1e-9; // Small tolerance for floating-point comparisons
+
+// --- Geometric Helper Functions (No External Deps) ---
+
+/**
+ * Calculates the Euclidean distance between two points.
+ * @param {Point} p1
+ * @param {Point} p2
+ * @returns {number} The distance between p1 and p2.
+ */
+function dist(p1, p2) {
+    return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+}
+
+/**
+ * Calculates the squared Euclidean distance between a point and a line segment.
+ * This is more efficient than `dist` because it avoids the square root.
+ * @param {Point} p - The point.
+ * @param {Point} a - One endpoint of the segment.
+ * @param {Point} b - The other endpoint of the segment.
+ * @returns {number} The squared distance.
+ */
+function sqDistPointSegment(p, a, b) {
+    const l2 = (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y);
+    if (l2 === 0) return dist(p, a) * dist(p, a); // Segment is a point
+
+    const t = ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2;
+
+    let closestPoint;
+    if (t < 0) {
+        closestPoint = a;
+    } else if (t > 1) {
+        closestPoint = b;
+    } else {
+        closestPoint = {
+            x: a.x + t * (b.x - a.x),
+            y: a.y + t * (b.y - a.y)
+        };
+    }
+    return dist(p, closestPoint) * dist(p, closestPoint);
+}
+
+/**
+ * Determines the orientation of three ordered points (p, q, r).
+ * Used for checking collinearity and turns (clockwise/counter-clockwise).
+ * @param {Point} p
+ * @param {Point} q
+ * @param {Point} r
+ * @returns {number} 0 -> Collinear, 1 -> Clockwise, 2 -> Counterclockwise
+ */
+function orientation(p, q, r) {
+    const val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+    if (Math.abs(val) < EPSILON) return 0; // Collinear
+    return (val > 0) ? 1 : 2; // Clockwise or Counterclockwise
+}
+
+/**
+ * Given three collinear points p, q, r, checks if point q lies on segment pr.
+ * @param {Point} p
+ * @param {Point} q
+ * @param {Point} r
+ * @returns {boolean} True if q lies on segment pr, false otherwise.
+ */
+function onSegment(p, q, r) {
+    return (q.x <= Math.max(p.x, r.x) && q.x >= Math.min(p.x, r.x) &&
+            q.y <= Math.max(p.y, r.y) && q.y >= Math.min(p.y, r.y));
+}
+
+/**
+ * Checks if two line segments (p1, q1) and (p2, q2) intersect.
+ * Does not return the intersection point, only if they intersect.
+ * Source: Based on the algorithm from GeeksforGeeks (Modified for JavaScript and EPSILON)
+ * @param {Point} p1 - First endpoint of segment 1
+ * @param {Point} q1 - Second endpoint of segment 1
+ * @param {Point} p2 - First endpoint of segment 2
+ * @param {Point} q2 - Second endpoint of segment 2
+ * @returns {boolean} True if segments intersect, false otherwise.
+ */
+function doSegmentsIntersect(p1, q1, p2, q2) {
+    // Find the four orientations needed for general and special cases
+    const o1 = orientation(p1, q1, p2);
+    const o2 = orientation(p1, q1, q2);
+    const o3 = orientation(p2, q2, p1);
+    const o4 = orientation(p2, q2, q1);
+
+    // General case: non-collinear and orientations are different
+    if (o1 !== 0 && o2 !== 0 && o3 !== 0 && o4 !== 0 && o1 !== o2 && o3 !== o4) {
+        return true;
+    }
+
+    // Special Cases: Collinear points
+    // p1, q1 and p2 are collinear and p2 lies on segment p1q1
+    if (o1 === 0 && onSegment(p1, p2, q1)) return true;
+
+    // p1, q1 and q2 are collinear and q2 lies on segment p1q1
+    if (o2 === 0 && onSegment(p1, q2, q1)) return true;
+
+    // p2, q2 and p1 are collinear and p1 lies on segment p2q2
+    if (o3 === 0 && onSegment(p2, p1, q2)) return true;
+
+    // p2, q2 and q1 are collinear and q1 lies on segment p2q2
+    if (o4 === 0 && onSegment(p2, q1, q2)) return true;
+
+    return false; // Doesn't fall in any of the above cases
+}
+
+/**
+ * Checks if a point is inside a polygon using the Ray Casting (Even-Odd) algorithm.
+ * The polygon points should be ordered (clockwise or counter-clockwise).
+ * Source: Adapted from https://wrf.ecse.rpi.edu/Research/Short_Notes/pnpoly.html by W. Randolph Franklin
+ * @param {Point} point - The point to check.
+ * @param {Point[]} polygon - An array of points defining the polygon.
+ * @returns {boolean} True if the point is inside, false otherwise.
+ */
+function isPointInPolygon(point, polygon) {
+    const n = polygon.length;
+    let inside = false;
+
+    for (let i = 0, j = n - 1; i < n; j = i++) {
+        const xi = polygon[i].x, yi = polygon[i].y;
+        const xj = polygon[j].x, yj = polygon[j].y;
+
+        const intersect = ((yi > point.y) !== (yj > point.y)) &&
+                          (point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi);
+        if (intersect) {
+            inside = !inside;
+        }
+    }
+    return inside;
+}
+
+/**
+ * Checks the relationship between two quadrilaterals: intersect, touch, or neither.
+ *
+ * @param {Quad} quad1 - The first quadrilateral, an array of 4 Point objects.
+ * @param {Quad} quad2 - The second quadrilateral, an array of 4 Point objects.
+ * @returns {'intersect' | 'touch' | 'neither'} The relationship between the two quadrilaterals.
+ */
+
+ function getQuadrilateralRelationship(quad1, quad2) {
+    // Helper to get edges for a quadrilateral
+    const getEdges = (quad) => {
+        const edges = [];
+        for (let i = 0; i < 4; i++) {
+            edges.push({ p1: quad[i], p2: quad[(i + 1) % 4] });
+        }
+        return edges;
+    };
+
+    const edges1 = getEdges(quad1);
+    const edges2 = getEdges(quad2);
+
+    // 1. Check for Edge-Edge Intersection
+    for (const edge1 of edges1) {
+        for (const edge2 of edges2) {
+            if (doSegmentsIntersect(edge1.p1, edge1.p2, edge2.p1, edge2.p2)) {
+                return 'intersect';
+            }
+        }
+    }
+
+    // 2. Check for Containment (one quad fully inside the other)
+    // We only need to check one point from each quad. If one point is inside,
+    // and no edges intersected, then it must be fully contained.
+    if (isPointInPolygon(quad1[0], quad2)) {
+        return 'intersect';
+    }
+    if (isPointInPolygon(quad2[0], quad1)) {
+        return 'intersect';
+    }
+
+    // 3. If no intersection, check for 'touching' (minimum distance effectively zero)
+    let minSqDistance = Infinity;
+
+    // Check squared distance from each vertex of quad1 to all edges of quad2
+    for (const p of quad1) {
+        for (const edge of edges2) {
+            const d = sqDistPointSegment(p, edge.p1, edge.p2);
+            if (d < minSqDistance) {
+                minSqDistance = d;
+            }
+        }
+    }
+
+    // Check squared distance from each vertex of quad2 to all edges of quad1
+    for (const p of quad2) {
+        for (const edge of edges1) {
+            const d = sqDistPointSegment(p, edge.p1, edge.p2);
+            if (d < minSqDistance) {
+                minSqDistance = d;
+            }
+        }
+    }
+
+    // If minSqDistance is very close to zero, they are touching.
+    // We compare squared distances to avoid unnecessary Math.sqrt calls until the very end.
+    if (minSqDistance < EPSILON * EPSILON) { // Compare squared distance with squared epsilon
+        return 'touch';
+    }
+
+    // If no intersection and not touching
+    return 'neither';
+}
+
+/**
+ * @typedef {object} Point
+ * @property {number} x - The X coordinate.
+ * @property {number} y - The Y coordinate.
+ */
+
+/**
+ * Finds the intersection point of two infinite lines.
+ * Each line is defined by two distinct points.
+ *
+ * @param {number} x1 - X coordinate of the first point of Line 1.
+ * @param {number} y1 - Y coordinate of the first point of Line 1.
+ * @param {number} x2 - X coordinate of the second point of Line 1.
+ * @param {number} y2 - Y coordinate of the second point of Line 1.
+ * @param {number} x3 - X coordinate of the first point of Line 2.
+ * @param {number} y3 - Y coordinate of the first point of Line 2.
+ * @param {number} x4 - X coordinate of the second point of Line 2.
+ * @param {number} y4 - Y coordinate of the second point of Line 2.
+ * @returns {Point | null} The intersection point as { x: number, y: number },
+ * or null if the lines are parallel or collinear (no unique intersection).
+ */
+ function findLineIntersection(x1, y1, x2, y2, x3, y3, x4, y4) {
+    const px_length = x2 - x1;
+  const py_length = y2 - y1;
+
+  const dx_length = x4 - x3;
+  const dy_length = y4 - y3;
+
+  const denom = px_length * dy_length - py_length * dx_length;
+  if (!denom)
+    return [x2, y2];
+
+  const param =
+      ((x3 - x1) * dy_length - (y3 - y1) * dx_length) / denom;
+
+return [x1 + param * px_length, y1 + param * py_length];
+}
+function se(s, t = 0.5) {
+    const n = Math.pow(2, -s);
+  const x = Math.pow(t, 1 / n);
+  const y = Math.pow(1 - t, 1 / n);
+  return {
+    x,
+    y
+  };
+}
+    function render() {
+        const tlh = +document.forms.form.elements.tlh.value;
+        const tlv = +document.forms.form.elements.tlv.value;
+        const tls = +document.forms.form.elements.tls.value;
+        const brh = +document.forms.form.elements.brh.value;
+        const brv = +document.forms.form.elements.brv.value;
+        const brs = +document.forms.form.elements.brs.value;
+        const target = document.querySelector(".target");
+        const ref = document.querySelector(".ref");
+        ref.style.setProperty("corner-top-left-shape", `superellipse(${tls})`);
+        ref.style.setProperty("corner-bottom-right-shape", `superellipse(${brs})`);
+        target.style.setProperty("corner-top-left-shape", `superellipse(${tls})`);
+        target.style.setProperty("corner-bottom-right-shape", `superellipse(${brs})`);
+        ref.style.setProperty("border-top-left-radius", `${tlh}% ${tlv}%`);
+        ref.style.setProperty("border-bottom-right-radius", `${brh}% ${brv}%`);
+        /**
+         * @type {CanvaRenderingContext2D}
+         */
+        const ctx = document.querySelector("canvas#canvas").getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "red"
+        ctx.strokeStyle = "orange"
+        ctx.lineWidth = 6;
+        const ffh = canvas.width / 100;
+        const ffv = canvas.height / 100;
+        const se1 = se(tls);
+        const se2 = se(brs);
+
+        function computeGeo(f) {
+            const fh = ffh * f;
+            const fv = ffv * f;
+            const hc1 = [se1.x * fh * tlh, se1.y * fv * tlv];
+        const hc2 = [canvas.width - se2.x * fh * brh, canvas.height - se2.y * fv * brv];
+        const cp1 = [Math.min(tlh * fh, (4 * hc1[0] - fh * tlh) / 2), Math.min(tlv * fv, (4 * hc1[1] - fv * tlv) / 2)];
+        const cp2 = [canvas.width - Math.min(brh * fh, (4 * (canvas.width - hc2[0]) - fh * brh) / 2), canvas.height - Math.min(brv * fv, (4 * (canvas.height - hc2[1]) - fv * brv) / 2)];
+        const v1d = Math.hypot(...hc1);
+        const v2d = Math.hypot(hc2[0] - canvas.width, hc2[0] - canvas.height);
+        const c1p = [hc1[0] + (cp1[0] / v1d), hc1[1] - cp1[1] / v1d];
+        const c2p = [hc2[0] + ((canvas.width - cp2[0]) / v2d), hc2[1] - ((canvas.height - cp2[1]) / v2d)];
+        const a1 = findLineIntersection(tlh * fh, 0, ...cp1, ...hc1, ...c1p);
+        const b1 = findLineIntersection(0, tlv * fv, ...cp1, ...hc1, ...c1p);
+        const a2 = findLineIntersection(canvas.width - brh * fh, canvas.height, ...cp2, ...hc2, ...c2p);
+        const b2 = findLineIntersection(canvas.width, canvas.height - brv * fv, ...cp2, ...hc2, ...c2p);
+        const q1 = [
+            {x: tlh * fh, y: 0},
+            {x: a1[0], y: a1[1]},
+            {x: b1[0], y: b1[1]},
+            {x: 0, y: tlv * fv}
+        ];
+        const q2 = [
+            {x: canvas.width - brh * fh, y: canvas.height},
+            {x: a2[0], y: a2[1]},
+            {x: b2[0], y: b2[1]},
+            {x: canvas.width, y: canvas.height - brv * fv}
+        ];
+            return {hc1, hc2, q1, q2};
+
+        }
+
+        const {hc1, hc2, q1, q2} = computeGeo(1);
+        function drawQuad(q) {
+            ctx.beginPath();
+            ctx.moveTo(q[0].x, q[0].y);
+            ctx.lineTo(q[1].x, q[1].y);
+            ctx.lineTo(q[2].x, q[2].y);
+            ctx.lineTo(q[3].x, q[3].y);
+            ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.arc(...hc1,  8, 0, 2 * Math.PI);
+        ctx.fill();
+        drawQuad(q1);
+        ctx.beginPath();
+        ctx.arc(...hc2,  8, 0, 2 * Math.PI);
+        ctx.fill();
+        drawQuad(q2);
+        ctx.stroke();
+
+        const relationship = getQuadrilateralRelationship(q1, q2);
+
+        function searchFactor(f, min, max) {
+            if (max - min < 0.01)
+                return (max + min) / 2;
+            const {q1, q2} = computeGeo(f);
+            if (getQuadrilateralRelationship(q1, q2) === "intersect")
+                return searchFactor((f - min) / 2, min, f);
+            else
+                return searchFactor(f + (max - f) / 2, f, max);
+        }
+        const f = relationship === "intersect" ? searchFactor(0.5, 0.001, 1) : 1;
+        const tlh2 = tlh * f;
+        const tlv2 = tlv * f;
+        const brh2 = brh * f;
+        const brv2 = brv * f;
+        target.style.setProperty("border-top-left-radius", `${tlh2}% ${tlv2}%`);
+            target.style.setProperty("border-bottom-right-radius", `${brh2}% ${brv2}%`);
+    }
+
+    document.forms.form.oninput = () => render();
+    render();
+</script>
